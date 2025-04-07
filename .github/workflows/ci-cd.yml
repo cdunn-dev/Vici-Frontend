@@ -20,11 +20,14 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+      
+      - name: Install Yarn Classic
+        run: |
+          npm uninstall -g yarn
+          npm install -g yarn@1.22.19
           
       - name: Install dependencies
-        run: |
-          npm install -g yarn
-          yarn install
+        run: yarn install --frozen-lockfile
         
       - name: Run tests
         run: yarn workspace shared test
@@ -51,10 +54,13 @@ jobs:
         with:
           node-version: '20'
           
-      - name: Install dependencies
+      - name: Install Yarn Classic
         run: |
-          npm install -g yarn
-          yarn install
+          npm uninstall -g yarn
+          npm install -g yarn@1.22.19
+          
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2

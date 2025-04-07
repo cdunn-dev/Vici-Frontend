@@ -30,10 +30,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     
-    - name: Install Dependencies
+    - name: Install Yarn Classic
       run: |
-        npm install -g yarn
-        yarn install
+        npm uninstall -g yarn
+        npm install -g yarn@1.22.19
+    
+    - name: Install Dependencies
+      run: yarn install --frozen-lockfile
 
     - name: Run Lint
       run: yarn workspace shared lint
