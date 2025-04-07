@@ -21,10 +21,10 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
-      - name: Check and update lockfile
+      - name: Install dependencies
         run: |
           yarn set version stable
-          yarn install || yarn install --frozen-lockfile
+          yarn install --immutable
 
       - name: Run linting
         working-directory: packages/shared
@@ -59,10 +59,10 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: Check and update lockfile
+      - name: Install dependencies
         run: |
           yarn set version stable
-          yarn install || yarn install --frozen-lockfile
+          yarn install --immutable
           yarn add @octokit/rest -W
 
       - name: Check branch protection
