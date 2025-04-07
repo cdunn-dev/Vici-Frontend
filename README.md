@@ -1,6 +1,9 @@
-# Vici Frontend Monorepo
+# Vici Frontend
 
-This monorepo contains all frontend code for the Vici application, including web, mobile, and shared packages.
+Frontend monorepo for the Vici application.
+
+## Last Updated
+Last updated: 2024-03-19
 
 ## Project Structure
 
