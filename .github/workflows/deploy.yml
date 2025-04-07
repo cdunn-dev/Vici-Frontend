@@ -18,13 +18,17 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'yarn'
+        cache-dependency-path: 'yarn.lock'
+    
+    - name: Install Yarn
+      run: npm install -g yarn
     
     - name: Install dependencies
-      run: npm ci
+      run: yarn install
     
     - name: Build
-      run: npm run build
+      run: yarn build
       env:
         NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
         VITE_ENV: ${{ secrets.PROD_VITE_ENV }}
