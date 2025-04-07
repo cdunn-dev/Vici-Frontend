@@ -21,12 +21,15 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
       
-      - name: Install dependencies
+      - name: Setup Yarn Berry
         run: |
-          npm install -g yarn
-          yarn install
+          corepack enable
+          yarn set version 4.8.1
+          yarn plugin import workspace-tools
+          
+      - name: Install dependencies
+        run: yarn install
         
       - name: Run tests
         run: yarn workspace shared test
@@ -53,12 +56,15 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '20'
-          cache: 'npm'
+          
+      - name: Setup Yarn Berry
+        run: |
+          corepack enable
+          yarn set version 4.8.1
+          yarn plugin import workspace-tools
           
       - name: Install dependencies
-        run: |
-          npm install -g yarn
-          yarn install
+        run: yarn install
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2

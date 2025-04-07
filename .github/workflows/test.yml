@@ -30,12 +30,15 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+    
+    - name: Setup Yarn Berry
+      run: |
+        corepack enable
+        yarn set version 4.8.1
+        yarn plugin import workspace-tools
     
     - name: Install Dependencies
-      run: |
-        npm install -g yarn
-        yarn install
+      run: yarn install
 
     - name: Run Lint
       run: yarn workspace shared lint
