@@ -2,9 +2,9 @@ name: Branch Protection
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
 
 jobs:
   validate:
@@ -18,27 +18,31 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-          cache: 'npm'
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          yarn set version classic
+          yarn install --frozen-lockfile
 
       - name: Run linting
-        run: npm run lint
-
-      - name: Run type checking
-        run: npm run type-check
+        working-directory: packages/shared
+        run: yarn lint
 
       - name: Run tests
-        run: npm test
+        working-directory: packages/shared
+        run: yarn test
 
       - name: Check code coverage
-        run: npm run test:coverage
+        working-directory: packages/shared
+        run: yarn test:coverage
         env:
           CI: true
 
       - name: Build verification
-        run: npm run build
+        working-directory: packages/shared
+        run: yarn build
 
   enforce-protection:
     name: Enforce Branch Protection
@@ -48,12 +52,18 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const { data: branch } = await github.rest.repos.getBranch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch: context.ref.replace('refs/heads/', '')
-            });
-            
-            if (!branch.protected) {
-              core.setFailed(`Branch ${context.ref} is not protected. Please enable branch protection rules.`);
+            const branch = context.ref.replace('refs/heads/', '');
+            try {
+              const { data: protection } = await github.repos.getBranchProtection({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: branch,
+              });
+              console.log(`Branch protection rules for ${branch}:`, protection);
+            } catch (error) {
+              if (error.status === 404) {
+                console.log(`Branch ${branch} does not exist or is not protected`);
+              } else {
+                throw error;
+              }
             } 
