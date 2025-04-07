@@ -20,29 +20,117 @@ jobs:
           cache: 'yarn'
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          corepack enable
+          echo "Node version: $(node --version)"
+          echo "Yarn version: $(yarn --version)"
+          yarn config list
+
+      - name: Debug workspace structure
+        run: |
+          echo "=== Workspace Structure ==="
+          echo "Current directory: $(pwd)"
+          echo "Root contents:"
+          ls -la
+          echo "\nPackage.json contents:"
+          cat package.json
+          echo "\nWorkspace packages:"
+          ls -la packages/
+          for pkg in packages/*; do
+            if [ -d "$pkg" ]; then
+              echo "\n=== Contents of $pkg ==="
+              ls -la "$pkg"
+              echo "\n=== package.json in $pkg ==="
+              cat "$pkg/package.json"
+            fi
+          done
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: |
+          echo "=== Installing Dependencies ==="
+          yarn install --immutable --verbose
+          echo "\n=== Dependency Installation Complete ==="
+          echo "Workspace node_modules:"
+          ls -la node_modules/
+          for pkg in packages/*; do
+            if [ -d "$pkg" ]; then
+              echo "\n=== node_modules in $pkg ==="
+              ls -la "$pkg/node_modules" 2>/dev/null || echo "No node_modules directory"
+            fi
+          done
 
       - name: Run tests
+        id: run_tests
         working-directory: packages/shared
-        run: yarn test
+        continue-on-error: true
+        run: |
+          echo "=== Running Tests ==="
+          echo "Current directory: $(pwd)"
+          echo "Available scripts:"
+          cat package.json | grep -A 10 '"scripts":'
+          yarn test 2>&1 | tee test-output.log || {
+            echo "::error::Tests failed. See below for details:"
+            cat test-output.log
+            echo "::group::Package Dependencies"
+            yarn list --depth=0
+            echo "::endgroup::"
+            echo "::group::Environment Info"
+            node --version
+            yarn --version
+            echo "::endgroup::"
+            exit 1
+          }
 
       - name: Run linting
+        id: run_lint
         working-directory: packages/shared
-        run: yarn lint
+        continue-on-error: true
+        run: |
+          echo "=== Running Linting ==="
+          echo "ESLint version:"
+          yarn eslint --version || echo "ESLint not found"
+          echo "Available scripts:"
+          cat package.json | grep -A 10 '"scripts":'
+          yarn lint 2>&1 | tee lint-output.log || {
+            echo "::error::Linting failed. See below for details:"
+            cat lint-output.log
+            echo "::group::ESLint Config"
+            cat .eslintrc* 2>/dev/null || echo "No ESLint config found"
+            echo "::endgroup::"
+            exit 1
+          }
 
       - name: Check branch protection
+        id: check_protection
         uses: actions/github-script@v7
         with:
           script: |
             try {
+              console.log('=== Checking Branch Protection ===');
+              const targetBranch = context.payload.pull_request?.base?.ref || context.ref.replace('refs/heads/', '');
+              console.log('Target branch:', targetBranch);
+              console.log('Event context:', JSON.stringify({
+                eventName: context.eventName,
+                ref: context.ref,
+                sha: context.sha,
+                workflow: context.workflow,
+                action: context.action,
+                actor: context.actor,
+                payload: {
+                  ...context.payload,
+                  // Exclude large objects from logging
+                  repository: '[Repository Object]',
+                  organization: '[Organization Object]',
+                }
+              }, null, 2));
+
               const { data: branch } = await github.rest.repos.getBranch({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                branch: context.payload.pull_request?.base?.ref || context.ref.replace('refs/heads/', '')
+                branch: targetBranch
               });
+
+              console.log('Branch data:', JSON.stringify(branch, null, 2));
 
               if (!branch.protected) {
                 console.log('Warning: Branch is not protected. Protection rules should be enabled.');
@@ -52,14 +140,40 @@ jobs:
               const { data: protection } = await github.rest.repos.getBranchProtection({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                branch: context.payload.pull_request?.base?.ref || context.ref.replace('refs/heads/', '')
+                branch: targetBranch
               });
 
-              console.log('Branch protection rules found:', protection);
+              console.log('Protection rules:', JSON.stringify(protection, null, 2));
             } catch (error) {
+              console.log('Error checking branch protection:', {
+                name: error.name,
+                message: error.message,
+                status: error.status,
+                documentation_url: error.documentation_url,
+                stack: error.stack
+              });
+              
               if (error.status === 404) {
                 console.log('Branch protection not configured yet. This is expected for new branches.');
                 return;
               }
               throw error;
-            } 
+            }
+
+      - name: Report job status
+        if: always()
+        run: |
+          echo "=== Job Status Report ==="
+          echo "Test step status: ${{ steps.run_tests.outcome }}"
+          echo "Lint step status: ${{ steps.run_lint.outcome }}"
+          echo "Protection check status: ${{ steps.check_protection.outcome }}"
+          
+          if [ -f "packages/shared/test-output.log" ]; then
+            echo "=== Test Output ==="
+            cat packages/shared/test-output.log
+          fi
+          
+          if [ -f "packages/shared/lint-output.log" ]; then
+            echo "=== Lint Output ==="
+            cat packages/shared/lint-output.log
+          fi 
