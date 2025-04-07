@@ -3704,7 +3704,7 @@ __metadata:
     react-native: "npm:^0.73.0"
     react-native-gesture-handler: "npm:^2.0.0"
     react-native-safe-area-context: "npm:^4.0.0"
-    react-native-screens: "npm:^3.0.0"
+    react-native-screens: "npm:^4.0.0"
     react-redux: "npm:^9.0.0"
     react-test-renderer: "npm:^18.2.0"
     ts-jest: "npm:^29.3.1"
@@ -3714,15 +3714,15 @@ __metadata:
 
 "@vici/shared@file:../shared::locator=%40vici%2Fmobile%40workspace%3Apackages%2Fmobile":
   version: 1.0.0
-  resolution: "@vici/shared@file:../shared#../shared::hash=6e4030&locator=%40vici%2Fmobile%40workspace%3Apackages%2Fmobile"
-  checksum: 10c0/574fac057c7e7cad8843e93c140bd8b5b306c15e1248f3e66168a5d457b6a3750b9f55bf3678dd3f3c71093bbc4186f9e1cc6448337c52b2e39950473c4f4b8e
+  resolution: "@vici/shared@file:../shared#../shared::hash=ca9ed3&locator=%40vici%2Fmobile%40workspace%3Apackages%2Fmobile"
+  checksum: 10c0/d09982e163011c9a8a09e3aa7036a0944a0a181d59475889757bb406e6bab49eab7ae6b4e623049b30601867de17696c3746cd4b97e6e14f5a13e2ed7201e52a
   languageName: node
   linkType: hard
 
 "@vici/shared@file:../shared::locator=%40vici%2Fweb%40workspace%3Apackages%2Fweb":
   version: 1.0.0
-  resolution: "@vici/shared@file:../shared#../shared::hash=6e4030&locator=%40vici%2Fweb%40workspace%3Apackages%2Fweb"
-  checksum: 10c0/574fac057c7e7cad8843e93c140bd8b5b306c15e1248f3e66168a5d457b6a3750b9f55bf3678dd3f3c71093bbc4186f9e1cc6448337c52b2e39950473c4f4b8e
+  resolution: "@vici/shared@file:../shared#../shared::hash=ca9ed3&locator=%40vici%2Fweb%40workspace%3Apackages%2Fweb"
+  checksum: 10c0/d09982e163011c9a8a09e3aa7036a0944a0a181d59475889757bb406e6bab49eab7ae6b4e623049b30601867de17696c3746cd4b97e6e14f5a13e2ed7201e52a
   languageName: node
   linkType: hard
 
@@ -9826,16 +9826,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-screens@npm:^3.0.0":
-  version: 3.37.0
-  resolution: "react-native-screens@npm:3.37.0"
+"react-native-screens@npm:^4.0.0":
+  version: 4.10.0
+  resolution: "react-native-screens@npm:4.10.0"
   dependencies:
     react-freeze: "npm:^1.0.0"
     warn-once: "npm:^0.1.0"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 10c0/a8de8dc21f522567de1600ae79a5ec472ffe3db8bc90d4ca8b58deae6e732e35d090a52f26cbc7591d635385f83b2784382d543dbb8d2b5fe40ed1f7bffe940b
+  checksum: 10c0/09d1f55431b85e556ef7b5efd776ac5e85303e47d9138f910cb8c25ff3804effc43185f84e8842bcae2219e8fee12366b3725f955f638c109387efb82e0260f3
   languageName: node
   linkType: hard
 
