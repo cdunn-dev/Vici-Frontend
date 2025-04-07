@@ -29,18 +29,15 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
     
     - name: Install Dependencies
-      run: |
-        yarn config set nodeLinker node-modules
-        yarn install
+      run: yarn install
 
     - name: Run Lint
-      run: npm run lint
+      run: yarn lint
 
     - name: Run Tests
-      run: npm run test
+      run: yarn test
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4

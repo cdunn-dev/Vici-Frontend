@@ -5,9 +5,9 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "cd packages/shared && npm run test",
-    "lint": "cd packages/shared && npm run lint",
-    "build": "cd packages/shared && npm run build"
+    "test": "yarn workspace shared test",
+    "lint": "yarn workspace shared lint",
+    "build": "yarn workspace shared build"
   },
   "dependencies": {
     "turbo": "^2.5.0"
