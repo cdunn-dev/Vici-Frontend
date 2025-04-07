@@ -9,6 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    environment: production
 
     steps:
     - uses: actions/checkout@v4
@@ -25,7 +26,8 @@ jobs:
     - name: Build
       run: npm run build
       env:
-        NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
+        VITE_ENV: ${{ secrets.PROD_VITE_ENV }}
     
     - name: Deploy to Vercel
       uses: amondnet/vercel-action@v25
@@ -34,4 +36,7 @@ jobs:
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
         working-directory: ./
-        vercel-args: '--prod' 
+        vercel-args: '--prod'
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
+          VITE_ENV: ${{ secrets.PROD_VITE_ENV }} 

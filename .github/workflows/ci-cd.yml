@@ -27,6 +27,9 @@ jobs:
         
       - name: Run tests
         run: npm test
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.DEV_NEXT_PUBLIC_API_URL }}
+          VITE_ENV: ${{ secrets.DEV_VITE_ENV }}
         
       - name: Run linting
         run: npm run lint
@@ -64,11 +67,23 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+        env:
+          NEXT_PUBLIC_API_URL: ${{ 
+            github.ref == 'refs/heads/main' && secrets.PROD_NEXT_PUBLIC_API_URL ||
+            github.ref == 'refs/heads/staging' && secrets.STAGING_NEXT_PUBLIC_API_URL ||
+            secrets.DEV_NEXT_PUBLIC_API_URL
+          }}
+          VITE_ENV: ${{ 
+            github.ref == 'refs/heads/main' && secrets.PROD_VITE_ENV ||
+            github.ref == 'refs/heads/staging' && secrets.STAGING_VITE_ENV ||
+            secrets.DEV_VITE_ENV
+          }}
 
   deploy-staging:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    environment: staging
     
     steps:
       - uses: actions/checkout@v3
@@ -82,6 +97,9 @@ jobs:
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
           
       - name: Deploy to staging
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.STAGING_NEXT_PUBLIC_API_URL }}
+          VITE_ENV: ${{ secrets.STAGING_VITE_ENV }}
         run: |
           kubectl apply -k k8s/overlays/staging
           kubectl rollout status deployment/vici-app --namespace=staging
@@ -105,6 +123,9 @@ jobs:
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
           
       - name: Deploy to production
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
+          VITE_ENV: ${{ secrets.PROD_VITE_ENV }}
         run: |
           kubectl apply -k k8s/base
           kubectl rollout status deployment/vici-app --namespace=production

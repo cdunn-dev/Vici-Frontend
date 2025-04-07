@@ -2,6 +2,9 @@
   "name": "vici-frontend",
   "version": "0.1.0",
   "private": true,
+  "repository": "https://github.com/cdunn-dev/Vici-Frontend.git",
+  "author": "cdunn-dev <dunn.chris.r@gmail.com>",
+  "license": "MIT",
   "workspaces": [
     "packages/*"
   ],
@@ -10,5 +13,8 @@
     "test": "yarn workspaces foreach -p run test",
     "lint": "yarn workspaces foreach -p run lint",
     "typecheck": "yarn workspaces foreach -p run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
   }
 }
