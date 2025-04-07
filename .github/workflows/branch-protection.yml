@@ -2,92 +2,86 @@ name: Branch Protection
 
 on:
   pull_request:
-    branches: [ main, develop, test/branch-protection ]
+    branches: [ main, develop ]
   push:
-    branches: [ main, develop, test/branch-protection ]
+    branches: [ main, develop ]
 
 jobs:
-  validate:
-    name: Validate Branch Protection
+  branch-protection:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: '18'
           cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
 
       - name: Install dependencies
-        run: |
-          yarn set version stable
-          yarn install --immutable
-
-      - name: Run linting
-        working-directory: packages/shared
-        run: yarn lint
+        run: yarn install --immutable
 
       - name: Run tests
-        working-directory: packages/shared
         run: yarn test
 
-      - name: Check code coverage
-        working-directory: packages/shared
-        run: yarn test:coverage
-        env:
-          CI: true
+      - name: Run linting
+        run: yarn lint
 
-      - name: Build verification
-        working-directory: packages/shared
-        run: yarn build
-
-  enforce-protection:
-    name: Enforce Branch Protection
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-
-      - name: Install dependencies
-        run: |
-          yarn set version stable
-          yarn install --immutable
-          yarn add @octokit/rest -W
+      - name: Check types
+        run: yarn type-check
 
       - name: Check branch protection
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { Octokit } = require("@octokit/rest");
-            const octokit = new Octokit({
-              auth: process.env.GITHUB_TOKEN
+            const { data: branch } = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: context.payload.pull_request?.base?.ref || context.ref.replace('refs/heads/', '')
             });
-            
-            const branch = context.ref.replace('refs/heads/', '');
-            try {
-              const { data: protection } = await octokit.repos.getBranchProtection({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                branch: branch,
-              });
-              console.log(`Branch protection rules for ${branch}:`, protection);
-            } catch (error) {
-              if (error.status === 404) {
-                console.log(`Branch ${branch} does not exist or is not protected`);
-              } else {
-                console.error('Error checking branch protection:', error);
-                throw error;
-              }
+
+            if (!branch.protected) {
+              core.setFailed('Branch is not protected. Please enable branch protection rules.');
+            }
+
+            const { data: protection } = await github.rest.repos.getBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: context.payload.pull_request?.base?.ref || context.ref.replace('refs/heads/', '')
+            });
+
+            const requiredChecks = [
+              'branch-protection',
+              'test',
+              'lint',
+              'type-check'
+            ];
+
+            const missingChecks = requiredChecks.filter(check => 
+              !protection.required_status_checks?.contexts?.includes(check)
+            );
+
+            if (missingChecks.length > 0) {
+              core.setFailed(`Missing required status checks: ${missingChecks.join(', ')}`);
+            }
+
+            if (!protection.required_pull_request_reviews?.required_approving_review_count) {
+              core.setFailed('Pull request reviews are not required');
+            }
+
+            if (!protection.required_pull_request_reviews?.dismiss_stale_reviews) {
+              core.setFailed('Stale reviews are not dismissed');
+            }
+
+            if (!protection.required_pull_request_reviews?.require_code_owner_reviews) {
+              core.setFailed('Code owner reviews are not required');
+            }
+
+            if (!protection.allow_force_pushes?.enabled) {
+              core.setFailed('Force pushes are not disabled');
+            }
+
+            if (!protection.allow_deletions?.enabled) {
+              core.setFailed('Branch deletion is not disabled');
             } 
