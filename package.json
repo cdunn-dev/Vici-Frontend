@@ -1,18 +1,13 @@
 {
   "name": "vici-frontend",
-  "packageManager": "yarn@4.8.1",
   "private": true,
-  "repository": "https://github.com/cdunn-dev/Vici-Frontend.git",
-  "author": "cdunn-dev <dunn.chris.r@gmail.com>",
-  "license": "MIT",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "build": "yarn workspaces foreach -p run build",
-    "test": "yarn workspaces foreach -p run test",
-    "lint": "yarn workspaces foreach -p run lint",
-    "typecheck": "yarn workspaces foreach -p run typecheck"
+    "test": "cd packages/shared && npm run test",
+    "lint": "cd packages/shared && npm run lint",
+    "build": "cd packages/shared && npm run build"
   },
   "dependencies": {
     "turbo": "^2.5.0"

@@ -24,27 +24,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
     
-    - uses: actions/setup-node@v4
+    - name: Setup Node.js and Yarn
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-    
-    - name: Setup Yarn Berry
-      run: |
-        corepack enable
-        yarn set version 4.8.1
-        yarn plugin import workspace-tools
+        cache: 'yarn'
     
     - name: Install Dependencies
-      run: yarn install
+      run: |
+        yarn config set nodeLinker node-modules
+        yarn install
 
     - name: Run Lint
-      run: yarn workspace shared lint
+      run: npm run lint
 
     - name: Run Tests
-      run: yarn workspace shared test
+      run: npm run test
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
