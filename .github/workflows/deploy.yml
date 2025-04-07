@@ -19,7 +19,6 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'yarn'
-        cache-dependency-path: 'yarn.lock'
     
     - name: Install Yarn
       run: npm install -g yarn
@@ -35,12 +34,12 @@ jobs:
     
     - name: Deploy to Vercel
       uses: amondnet/vercel-action@v25
+      env:
+        NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
+        VITE_ENV: ${{ secrets.PROD_VITE_ENV }}
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
         working-directory: ./
-        vercel-args: '--prod'
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
-          VITE_ENV: ${{ secrets.PROD_VITE_ENV }} 
+        vercel-args: '--prod' 

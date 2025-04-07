@@ -21,8 +21,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'yarn'
-          cache-dependency-path: 'yarn.lock'
-          
+      
       - name: Install Yarn
         run: npm install -g yarn
           
@@ -64,6 +63,9 @@ jobs:
           
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
+        env:
+          NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && secrets.PROD_NEXT_PUBLIC_API_URL || github.ref == 'refs/heads/staging' && secrets.STAGING_NEXT_PUBLIC_API_URL || secrets.DEV_NEXT_PUBLIC_API_URL }}
+          VITE_ENV: ${{ github.ref == 'refs/heads/main' && secrets.PROD_VITE_ENV || github.ref == 'refs/heads/staging' && secrets.STAGING_VITE_ENV || secrets.DEV_VITE_ENV }}
         with:
           context: .
           push: true
@@ -71,17 +73,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-        env:
-          NEXT_PUBLIC_API_URL: ${{ 
-            github.ref == 'refs/heads/main' && secrets.PROD_NEXT_PUBLIC_API_URL ||
-            github.ref == 'refs/heads/staging' && secrets.STAGING_NEXT_PUBLIC_API_URL ||
-            secrets.DEV_NEXT_PUBLIC_API_URL
-          }}
-          VITE_ENV: ${{ 
-            github.ref == 'refs/heads/main' && secrets.PROD_VITE_ENV ||
-            github.ref == 'refs/heads/staging' && secrets.STAGING_VITE_ENV ||
-            secrets.DEV_VITE_ENV
-          }}
 
   deploy-staging:
     needs: build-and-push
