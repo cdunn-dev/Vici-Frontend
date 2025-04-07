@@ -40,7 +40,13 @@ jobs:
         working-directory: packages/shared
         run: |
           echo "=== Building Shared Package ==="
-          yarn build
+          yarn build || {
+            echo "Build failed. Checking TypeScript configuration:"
+            cat tsconfig.json
+            echo "\nChecking source files:"
+            find src -type f -name "*.ts"
+            exit 1
+          }
           echo "Build output:"
           ls -la dist/
 
@@ -52,16 +58,35 @@ jobs:
           NODE_ENV: test
         run: |
           echo "=== Running Tests ==="
-          echo "Test files:"
-          find src -name "*.test.ts" -o -name "*.spec.ts"
-          yarn test --verbose
+          echo "Test files in src:"
+          find src -type f \( -name "*.test.ts" -o -name "*.spec.ts" \)
+          echo "\nTest files in __tests__:"
+          find src/__tests__ -type f \( -name "*.test.ts" -o -name "*.spec.ts" \)
+          echo "\nJest configuration:"
+          cat jest.config.js
+          yarn test --verbose --detectOpenHandles --forceExit || {
+            echo "Tests failed. Checking test environment:"
+            node -e "console.log('Node.js version:', process.version)"
+            node -e "console.log('Test environment:', process.env.NODE_ENV)"
+            echo "\nTest output:"
+            cat test-output.log || true
+            exit 1
+          }
 
       - name: Run linting
         id: run_lint
         working-directory: packages/shared
         run: |
           echo "=== Running Linting ==="
-          yarn lint --max-warnings 0
+          echo "ESLint configuration:"
+          cat .eslintrc.json
+          echo "\nChecking TypeScript files:"
+          find src -type f -name "*.ts"
+          yarn lint --max-warnings 0 || {
+            echo "Linting failed. Running with --debug flag:"
+            yarn lint --debug
+            exit 1
+          }
 
       - name: Check branch protection
         id: check_protection
@@ -107,12 +132,19 @@ jobs:
           echo "Lint step status: ${{ steps.run_lint.outcome }}"
           echo "Protection check status: ${{ steps.check_protection.outcome }}"
           
+          echo "\n=== Environment Information ==="
+          node -v
+          yarn -v
+          
+          echo "\n=== Package Versions ==="
+          yarn list --pattern "jest|typescript|eslint|@typescript-eslint"
+          
           if [ -f "packages/shared/test-output.log" ]; then
-            echo "=== Test Output ==="
+            echo "\n=== Test Output ==="
             cat packages/shared/test-output.log
           fi
           
           if [ -f "packages/shared/lint-output.log" ]; then
-            echo "=== Lint Output ==="
+            echo "\n=== Lint Output ==="
             cat packages/shared/lint-output.log
           fi 
