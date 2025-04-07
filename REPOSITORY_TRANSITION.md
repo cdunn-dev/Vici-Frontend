@@ -162,6 +162,27 @@
   - Pending: Integration tests, E2E setup
 - [ ] GitHub Pages Setup
   - Status: Pending configuration
+- [ ] CI/CD and Code Quality Setup
+  - Status: Deferred to post-MVP
+  - Blockers:
+    - TypeScript configuration for test file organization
+    - Branch protection rules setup
+    - GitHub Actions workflow configuration
+  - Required Tasks:
+    - Configure Node.js matrix testing
+    - Set up proper ESLint configuration
+    - Configure TypeScript build settings
+    - Set up automated code review process
+    - Configure coverage reporting
+  - Test Infrastructure Tasks:
+    - Organize test files under `src/__tests__`
+    - Set up proper test environment
+    - Configure Jest for unit/integration tests
+    - Add coverage thresholds
+  - Documentation Tasks:
+    - Add contributing guidelines
+    - Document development workflow
+    - Add PR/issue templates
 
 ### Next Steps (Prioritized)
 1. Enable GitHub Pages
