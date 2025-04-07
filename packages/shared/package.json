@@ -16,18 +16,19 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.json",
     "dev": "tsc --watch",
-    "test": "jest --config jest.config.js",
+    "test": "jest --config jest.config.js --passWithNoTests",
     "test:watch": "jest --config jest.config.js --watch",
     "test:coverage": "jest --config jest.config.js --coverage",
     "prepare": "husky install",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
-    "docs:serve": "npx serve docs"
+    "docs:serve": "npx serve docs",
+    "clean": "rm -rf dist coverage"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
@@ -40,6 +41,7 @@
     "eslint": "^8.56.0",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
+    "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
     "typedoc": "^0.28.2",
     "typedoc-plugin-markdown": "^4.6.1",
