@@ -30,13 +30,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     
-    - name: Install Yarn Classic
+    - name: Setup Yarn Berry
       run: |
-        npm uninstall -g yarn
-        npm install -g yarn@1.22.19
+        corepack enable
+        yarn set version berry
     
     - name: Install Dependencies
-      run: yarn install --frozen-lockfile
+      run: yarn install
 
     - name: Run Lint
       run: yarn workspace shared lint
