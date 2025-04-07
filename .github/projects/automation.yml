@@ -1,0 +1,26 @@
+name: Vici Project Automation
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled]
+  pull_request:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, review_requested, review_request_removed]
+
+jobs:
+  automate-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v0.4.1
+        with:
+          project-url: ${{ secrets.PROJECT_URL }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          labeled-columns: |
+            bug: "To Do"
+            enhancement: "To Do"
+            documentation: "To Do"
+          issue-column: "To Do"
+          pr-column: "In Progress"
+          pr-review-column: "Review"
+          pr-merged-column: "Done"
+          pr-closed-column: "Done"
+          issue-closed-column: "Done" 

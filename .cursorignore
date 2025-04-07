@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+dist/
+coverage/
+
+# Build outputs
+build/
+*.bundle.js
+
+# Logs
+*.log
+logs/
+
+# Test files
+# **/*.test.ts
+# **/*.test.tsx
+# **/__tests__/
+
+# Generated files
+*.generated.*
+*.min.js
+
+# Documentation
+# docs/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store 

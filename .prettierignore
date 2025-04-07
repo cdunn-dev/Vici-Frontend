@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+build/
+coverage/
+*.log
+.env*
+ios/
+android/
+*.d.ts 

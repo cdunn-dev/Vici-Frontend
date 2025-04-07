@@ -1,0 +1,54 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/shared/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/shared/**'
+      - '.github/workflows/test.yml'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: 'packages/shared/package-lock.json'
+
+    - name: Install Dependencies
+      run: |
+        cd packages/shared
+        npm ci
+
+    - name: Run Lint
+      run: |
+        cd packages/shared
+        npm run lint
+
+    - name: Run Tests
+      run: |
+        cd packages/shared
+        npm test
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: packages/shared/coverage/
+        retention-days: 7 

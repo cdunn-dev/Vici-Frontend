@@ -1,0 +1,20 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "out": "docs",
+  "name": "Vici Shared Package",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "categoryOrder": ["Core", "Components", "Hooks", "Utils", "*"],
+  "navigationLinks": {
+    "GitHub": "https://github.com/cdunn-dev/vici-frontend"
+  },
+  "sidebarLinks": {
+    "API": "https://api.vici.dev"
+  },
+  "searchInComments": true,
+  "plugin": ["typedoc-plugin-markdown"]
+} 

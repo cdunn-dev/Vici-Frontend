@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  labels:
+    app: logstash
+data:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+
+    filter {
+      if [kubernetes] {
+        mutate {
+          add_field => {
+            "[@metadata][target_index]" => "kubernetes-%{+YYYY.MM.dd}"
+          }
+        }
+      } else {
+        mutate {
+          add_field => {
+            "[@metadata][target_index]" => "logstash-%{+YYYY.MM.dd}"
+          }
+        }
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}"]
+        index => "%{[@metadata][target_index]}"
+      }
+    } 

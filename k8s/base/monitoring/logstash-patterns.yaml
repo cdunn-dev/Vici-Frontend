@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-patterns
+  labels:
+    app: logstash
+data:
+  vici_patterns: |
+    VICI_TIMESTAMP %{TIMESTAMP_ISO8601}
+    VICI_LOG_LEVEL [INFO|WARN|ERROR|DEBUG]
+    VICI_SERVICE [A-Za-z0-9_]+
+    VICI_MESSAGE .* 

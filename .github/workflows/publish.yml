@@ -1,0 +1,45 @@
+name: Publish Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event.inputs.version != ''
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+        cache-dependency-path: 'packages/shared/package-lock.json'
+
+    - name: Install Dependencies
+      run: |
+        cd packages/shared
+        npm ci
+
+    - name: Build Package
+      run: |
+        cd packages/shared
+        npm run build
+
+    - name: Publish to npm
+      run: |
+        cd packages/shared
+        npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 

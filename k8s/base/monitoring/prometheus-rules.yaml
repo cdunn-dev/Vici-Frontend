@@ -1,0 +1,80 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vici-alerts
+  namespace: default
+spec:
+  groups:
+  - name: vici
+    rules:
+    - alert: HighErrorRate
+      expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: High error rate detected
+        description: Error rate is above 5% for the last 5 minutes
+
+    - alert: HighLatency
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: High latency detected
+        description: 95th percentile latency is above 1 second
+
+    - alert: ResourceExhaustion
+      expr: container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 90
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: High memory usage
+        description: Container memory usage is above 90%
+
+    - alert: ScalingFailure
+      expr: kube_horizontalpodautoscaler_status_condition{condition="AbleToScale",status="false"} > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: HPA scaling failure
+        description: HorizontalPodAutoscaler is unable to scale
+
+    - alert: BackupFailure
+      expr: time() - vici_backup_last_success_timestamp > 86400
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: Backup failure
+        description: No successful backup in the last 24 hours
+
+    - alert: HighQueueLength
+      expr: vici_queue_length > 1000
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: High queue length
+        description: Queue length is above 1000 items
+
+    - alert: LowCacheHitRate
+      expr: rate(vici_cache_hits_total[5m]) / (rate(vici_cache_hits_total[5m]) + rate(vici_cache_misses_total[5m])) * 100 < 80
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Low cache hit rate
+        description: Cache hit rate is below 80%
+
+    - alert: DatabaseConnectionPoolExhaustion
+      expr: vici_db_connection_pool_utilization > 90
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Database connection pool near capacity
+        description: Database connection pool utilization is above 90% 

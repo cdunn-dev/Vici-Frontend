@@ -1,0 +1,63 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Core application resources
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - configmap.yaml
+  - secret.yaml
+
+  # Database resources
+  - postgres/deployment.yaml
+  - postgres/service.yaml
+  - postgres/pvc.yaml
+  - postgres/configmap.yaml
+  - postgres/secret.yaml
+
+  # Redis resources
+  - redis/deployment.yaml
+  - redis/service.yaml
+  - redis/pvc.yaml
+  - redis/configmap.yaml
+  - redis/secret.yaml
+
+  # Monitoring resources
+  - monitoring/prometheus-config.yaml
+  - monitoring/prometheus-deployment.yaml
+  - monitoring/prometheus-service.yaml
+  - monitoring/prometheus-pvc.yaml
+  - monitoring/grafana-deployment.yaml
+  - monitoring/grafana-service.yaml
+  - monitoring/grafana-pvc.yaml
+  - monitoring/grafana-secret.yaml
+  - monitoring/grafana-dashboards.yaml
+
+  # Logging resources
+  - logging/elasticsearch-deployment.yaml
+  - logging/elasticsearch-service.yaml
+  - logging/elasticsearch-pvc.yaml
+  - logging/logstash-deployment.yaml
+  - logging/logstash-configmap.yaml
+  - logging/kibana-deployment.yaml
+  - logging/kibana-service.yaml
+  - logging/filebeat-daemonset.yaml
+  - logging/filebeat-configmap.yaml
+
+  # Backup resources
+  - backup/backup-cronjob.yaml
+  - backup/backup-pvc.yaml
+  - backup/backup-scripts.yaml
+
+  # Security resources
+  - security/network-policies.yaml
+  - security/resource-quotas.yaml
+  - security/pod-security-policies.yaml
+
+  # Autoscaling resources
+  - autoscaling/hpa.yaml
+
+commonLabels:
+  app: vici
+  environment: production 
