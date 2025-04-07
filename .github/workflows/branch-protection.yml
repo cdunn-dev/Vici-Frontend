@@ -47,14 +47,23 @@ jobs:
   enforce-protection:
     name: Enforce Branch Protection
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Check branch protection
         uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { Octokit } = require("@octokit/rest");
+            const octokit = new Octokit({
+              auth: process.env.GITHUB_TOKEN
+            });
+            
             const branch = context.ref.replace('refs/heads/', '');
             try {
-              const { data: protection } = await github.repos.getBranchProtection({
+              const { data: protection } = await octokit.repos.getBranchProtection({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 branch: branch,
@@ -64,6 +73,7 @@ jobs:
               if (error.status === 404) {
                 console.log(`Branch ${branch} does not exist or is not protected`);
               } else {
+                console.error('Error checking branch protection:', error);
                 throw error;
               }
             } 
