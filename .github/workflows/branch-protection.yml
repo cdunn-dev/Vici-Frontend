@@ -51,6 +51,18 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies
+        run: |
+          yarn add @octokit/rest
+
       - name: Check branch protection
         uses: actions/github-script@v6
         with:
