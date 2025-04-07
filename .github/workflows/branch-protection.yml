@@ -29,7 +29,11 @@ jobs:
       - name: Install dependencies
         run: |
           echo "=== Installing Dependencies ==="
-          yarn install --immutable
+          yarn install --immutable || {
+            echo "Dependency installation failed. Checking yarn.lock:"
+            cat yarn.lock
+            exit 1
+          }
           echo "\n=== Dependency Installation Complete ==="
           echo "Workspace node_modules:"
           ls -la node_modules/
@@ -45,6 +49,8 @@ jobs:
             cat tsconfig.json
             echo "\nChecking source files:"
             find src -type f -name "*.ts"
+            echo "\nBuild error output:"
+            cat build-error.log || true
             exit 1
           }
           echo "Build output:"
@@ -64,12 +70,12 @@ jobs:
           find src/__tests__ -type f \( -name "*.test.ts" -o -name "*.spec.ts" \)
           echo "\nJest configuration:"
           cat jest.config.js
-          yarn test --verbose --detectOpenHandles --forceExit || {
+          yarn test --verbose --detectOpenHandles --forceExit > test-output.log 2>&1 || {
             echo "Tests failed. Checking test environment:"
             node -e "console.log('Node.js version:', process.version)"
             node -e "console.log('Test environment:', process.env.NODE_ENV)"
             echo "\nTest output:"
-            cat test-output.log || true
+            cat test-output.log
             exit 1
           }
 
@@ -82,9 +88,11 @@ jobs:
           cat .eslintrc.json
           echo "\nChecking TypeScript files:"
           find src -type f -name "*.ts"
-          yarn lint --max-warnings 0 || {
+          yarn lint --max-warnings 0 > lint-output.log 2>&1 || {
             echo "Linting failed. Running with --debug flag:"
             yarn lint --debug
+            echo "\nLint output:"
+            cat lint-output.log
             exit 1
           }
 
