@@ -16,21 +16,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Setup Node.js and Yarn
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
           
       - name: Install dependencies
-        run: yarn install
+        run: |
+          yarn set version stable
+          yarn install --frozen-lockfile
         
       - name: Run tests
+        working-directory: packages/shared
         run: yarn test
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.DEV_NEXT_PUBLIC_API_URL }}
           VITE_ENV: ${{ secrets.DEV_VITE_ENV }}
         
       - name: Run linting
+        working-directory: packages/shared
         run: yarn lint
 
   build-and-push:
