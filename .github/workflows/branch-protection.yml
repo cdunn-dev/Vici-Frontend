@@ -61,7 +61,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn add @octokit/rest
+          yarn add @octokit/rest -W
 
       - name: Check branch protection
         uses: actions/github-script@v6
