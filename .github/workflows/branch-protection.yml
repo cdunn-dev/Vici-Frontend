@@ -21,9 +21,12 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
+      - name: Check for lockfile integrity
+        run: yarn check --integrity
+
       - name: Install dependencies
         run: |
-          yarn set version classic
+          yarn set version stable
           yarn install --frozen-lockfile
 
       - name: Run linting
@@ -59,8 +62,13 @@ jobs:
         with:
           node-version: '18.x'
 
+      - name: Check for lockfile integrity
+        run: yarn check --integrity
+
       - name: Install dependencies
         run: |
+          yarn set version stable
+          yarn install --frozen-lockfile
           yarn add @octokit/rest -W
 
       - name: Check branch protection
