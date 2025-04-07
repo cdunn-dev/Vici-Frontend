@@ -19,8 +19,17 @@ jobs:
           node-version: '18'
           cache: 'yarn'
 
+      - name: Verify yarn.lock exists
+        run: |
+          if [ ! -f "yarn.lock" ]; then
+            echo "Error: yarn.lock file is missing"
+            exit 1
+          fi
+
       - name: Install dependencies
-        run: yarn install --immutable
+        run: |
+          yarn set version stable
+          yarn install --immutable
 
       - name: Run tests
         run: yarn test
