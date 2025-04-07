@@ -2,12 +2,12 @@ name: Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
     paths:
       - 'packages/shared/**'
       - '.github/workflows/test.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
     paths:
       - 'packages/shared/**'
       - '.github/workflows/test.yml'
@@ -32,20 +32,56 @@ jobs:
         cache: 'yarn'
         cache-dependency-path: '**/yarn.lock'
     
+    - name: Enable Corepack
+      run: |
+        corepack enable
+        echo "Node version: $(node --version)"
+        echo "Yarn version: $(yarn --version)"
+        yarn config list
+    
     - name: Install Dependencies
       run: |
-        yarn set version classic
-        yarn install --frozen-lockfile
+        yarn install --immutable
+        echo "Workspace node_modules:"
+        ls -la node_modules/
+        echo "\nShared package node_modules:"
+        ls -la packages/shared/node_modules/ || echo "No node_modules directory in shared package"
+
+    - name: Build
+      working-directory: packages/shared
+      run: |
+        echo "=== Building Package ==="
+        yarn build || {
+          echo "Build failed. Checking TypeScript configuration:"
+          cat tsconfig.json
+          echo "\nChecking source files:"
+          find src -type f -name "*.ts"
+          exit 1
+        }
 
     - name: Run Lint
       working-directory: packages/shared
-      run: yarn lint
+      run: |
+        echo "=== Running Lint ==="
+        yarn lint --max-warnings 0 || {
+          echo "Linting failed. Running with --debug flag:"
+          yarn lint --debug
+          exit 1
+        }
 
     - name: Run Tests
       working-directory: packages/shared
-      run: yarn test
+      run: |
+        echo "=== Running Tests ==="
+        yarn test --verbose --coverage || {
+          echo "Tests failed. Checking environment:"
+          node -e "console.log('Node.js version:', process.version)"
+          node -e "console.log('Test environment:', process.env.NODE_ENV)"
+          exit 1
+        }
       env:
         NODE_ENV: test
+        CI: true
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
