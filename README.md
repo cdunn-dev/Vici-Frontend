@@ -1,28 +1,42 @@
-# Vici Frontend
+# Vici App
 
-Frontend monorepo for the Vici application.
+Monorepo for the Vici application, containing both frontend and backend code.
 
 ## Last Updated
-Last updated: 2024-03-19
+Last updated: 2024-04-07
 
 ## Project Structure
 
 ```
-vici-frontend/
+Vici-App/
 ├── packages/
 │   ├── shared/              # Shared code
 │   │   ├── components/      # Common components
-│   │   ├── hooks/          # Shared hooks
-│   │   ├── services/       # API integration
-│   │   └── types/          # Common types
-│   ├── web/                # Web-specific code
+│   │   ├── hooks/           # Shared hooks
+│   │   ├── services/        # API integration
+│   │   └── types/           # Common types
+│   ├── web/                 # Web-specific code
 │   │   ├── pages/
 │   │   └── components/
-│   └── mobile/             # Mobile-specific code
-│       ├── screens/
-│       └── native-components/
+│   ├── mobile/              # Mobile-specific code
+│   │   ├── screens/
+│   │   └── native-components/
+│   ├── api/                 # Backend API
+│   │   ├── controllers/
+│   │   ├── routes/
+│   │   └── middleware/
+│   ├── database/            # Database models and migrations
+│   │   ├── models/
+│   │   ├── migrations/
+│   │   └── seeders/
+│   └── services/            # Backend services
+│       ├── auth/
+│       ├── training/
+│       └── analytics/
+├── tools/                   # Build and deployment tools
+├── docs/                    # Documentation
 ├── package.json
-└── turbo.json             # Monorepo configuration
+└── turbo.json              # Monorepo configuration
 ```
 
 ## Getting Started
@@ -38,8 +52,8 @@ vici-frontend/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/cdunn-dev/vici-frontend.git
-cd vici-frontend
+git clone https://github.com/cdunn-dev/Vici-App.git
+cd Vici-App
 ```
 
 2. Install dependencies:
@@ -57,6 +71,9 @@ yarn web:dev
 
 # Mobile development
 yarn mobile:dev
+
+# Backend API
+yarn api:dev
 ```
 
 ### Building

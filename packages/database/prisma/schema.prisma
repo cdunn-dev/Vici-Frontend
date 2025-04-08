@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  password        String
+  name            String
+  profilePicture  String?
+  dateOfBirth     DateTime?
+  gender          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  settings        UserSettings?
+  trainingPlans   TrainingPlan[]
+  workouts        Workout[]
+  connections     UserConnection[]
+  runnerProfile   RunnerProfile?
+}
+
+model UserSettings {
+  id                     String                    @id @default(uuid())
+  userId                 String                    @unique
+  user                   User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  distanceUnit           String                    @default("km")
+  language               String                    @default("en")
+  coachingStyle          String                    @default("Balanced")
+  privacyDataSharing     Boolean                   @default(false)
+  notificationPreferences NotificationPreferences?
+}
+
+model NotificationPreferences {
+  id            String       @id @default(uuid())
+  settingsId    String       @unique
+  userSettings  UserSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  email         Boolean      @default(true)
+  push          Boolean      @default(true)
+  sms           Boolean      @default(false)
+  inApp         Boolean      @default(true)
+}
+
+model TrainingPlan {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String    @default("Active")
+  goal        Json      // Stored as JSON { type, distance?, time?, date?, name?, description? }
+  settings    Json      // Stored as JSON { daysPerWeek, startDate, endDate?, preferredRunDays, maxRunDistance?, maxRunTime?, includeIntervals, includeLongRuns, includeRecoveryRuns, intensity }
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workouts    Workout[]
+}
+
+model Workout {
+  id              String       @id @default(uuid())
+  trainingPlanId  String
+  trainingPlan    TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  type            String
+  title           String
+  description     String?
+  scheduledDate   DateTime
+  duration        Int          // In seconds
+  distance        Int?         // In meters
+  steps           Json         // Array of workout steps
+  completedDate   DateTime?
+  actualDuration  Int?         // In seconds
+  actualDistance  Int?         // In meters
+  status          String       @default("scheduled")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+// User connections to third-party services (Strava, Garmin, etc.)
+model UserConnection {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String    // 'strava', 'garmin', etc.
+  accessToken    String
+  refreshToken   String?
+  providerUserId String?
+  expiresAt      DateTime?
+  lastSyncAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, provider])
+}
+
+// Runner profile with running-specific data
+model RunnerProfile {
+  id               String         @id @default(cuid())
+  userId           String         @unique
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fitnessLevel     String         // 'Beginner', 'Intermediate', 'Advanced'
+  weeklyDistance   Float?         // in meters
+  weeklyFrequency  Int?           // number of runs per week
+  recentRaces      Json?          // array of recent races
+  preferredRunTypes Json?         // array of preferred run types
+  injuryHistory    Json?          // array of injuries
+  personalBests    Json?          // array of personal bests
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+} 

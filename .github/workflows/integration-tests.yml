@@ -1,0 +1,140 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+  workflow_dispatch:
+
+jobs:
+  setup:
+    name: Setup Test Environment
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: yarn install
+        
+      - name: Setup PostgreSQL
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '14'
+          postgresql db: vici_test
+          postgresql user: postgres
+          postgresql password: postgres
+          
+      - name: Setup test database
+        run: |
+          yarn workspace @vici/database migrate:deploy
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/vici_test?schema=public"
+
+  api-tests:
+    name: API Integration Tests
+    needs: setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: yarn install
+        
+      - name: Start API server
+        run: |
+          yarn workspace @vici/api build
+          yarn workspace @vici/api start &
+          sleep 5
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/vici_test?schema=public"
+          JWT_SECRET: "test_jwt_secret"
+          JWT_REFRESH_SECRET: "test_refresh_secret"
+          
+      - name: Run integration tests
+        run: yarn workspace @vici/api test:integration
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/vici_test?schema=public"
+          JWT_SECRET: "test_jwt_secret"
+          JWT_REFRESH_SECRET: "test_refresh_secret"
+
+  frontend-backend-tests:
+    name: Frontend-Backend Integration
+    needs: setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: yarn install
+        
+      - name: Start API server
+        run: |
+          yarn workspace @vici/api build
+          yarn workspace @vici/api start &
+          sleep 5
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/vici_test?schema=public"
+          JWT_SECRET: "test_jwt_secret"
+          JWT_REFRESH_SECRET: "test_refresh_secret"
+          
+      - name: Build web app
+        run: yarn workspace @vici/web build
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:3001/api"
+          
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v5
+        with:
+          working-directory: packages/web
+          start: yarn start
+          wait-on: 'http://localhost:3000'
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:3001/api"
+
+  report:
+    name: Generate Test Report
+    needs: [api-tests, frontend-backend-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download test results
+        uses: actions/download-artifact@v3
+        with:
+          path: test-results
+          
+      - name: Generate report
+        run: |
+          echo "# Integration Test Results" > test-report.md
+          echo "## Test Summary" >> test-report.md
+          echo "Test run completed at $(date)" >> test-report.md
+          
+      - name: Upload report
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-report
+          path: test-report.md 

@@ -107,7 +107,7 @@ jobs:
           VITE_ENV: ${{ secrets.STAGING_VITE_ENV }}
         run: |
           kubectl apply -k k8s/overlays/staging
-          kubectl rollout status deployment/vici-app --namespace=staging
+          kubectl rollout status deployment/Vici-App --namespace=staging
           kubectl get pods --namespace=staging
 
   deploy-production:
@@ -133,5 +133,5 @@ jobs:
           VITE_ENV: ${{ secrets.PROD_VITE_ENV }}
         run: |
           kubectl apply -k k8s/base
-          kubectl rollout status deployment/vici-app --namespace=production
+          kubectl rollout status deployment/Vici-App --namespace=production
           kubectl get pods --namespace=production 

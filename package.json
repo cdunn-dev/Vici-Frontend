@@ -1,13 +1,22 @@
 {
-  "name": "vici-frontend",
+  "name": "vici-app",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/services/*"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cdunn-dev/Vici-App.git"
+  },
   "scripts": {
     "test": "yarn workspace shared test",
     "lint": "yarn workspace shared lint",
-    "build": "yarn workspace shared build"
+    "build": "yarn workspaces foreach -t run build",
+    "api:dev": "yarn workspace @vici/api dev",
+    "db:studio": "yarn workspace @vici/database db:studio",
+    "db:migrate": "yarn workspace @vici/database migrate",
+    "db:seed": "yarn workspace @vici/database db:seed"
   },
   "dependencies": {
     "turbo": "^2.5.0"

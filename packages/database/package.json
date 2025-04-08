@@ -1,0 +1,37 @@
+{
+  "name": "@vici/database",
+  "version": "1.0.0",
+  "description": "Vici database package",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "dev": "tsc -w",
+    "build": "tsc",
+    "db:generate": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node src/seeders/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.3.1",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.4",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.6.3",
+    "eslint": "^8.38.0",
+    "jest": "^29.5.0",
+    "prisma": "^5.3.1",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
