@@ -24,7 +24,7 @@ This document outlines the development timeline for the Vici-V1 frontend applica
   - Initialized repository
   - Added .gitignore
   - Set up main/develop branches
-- [ ] Set up CI/CD pipeline
+- [x] Set up CI/CD pipeline
   - Configure GitHub Actions
   - Set up automated testing
   - Add deployment workflows
@@ -119,14 +119,12 @@ This document outlines the development timeline for the Vici-V1 frontend applica
 2. Set up component documentation and testing
 3. Implement password recovery flow
 4. Add biometric authentication
-5. Set up CI/CD pipeline
 
 ## Next Steps
 1. Complete component library documentation
 2. Set up testing framework with Jest and React Testing Library
 3. Implement password recovery flow
 4. Add biometric authentication support
-5. Configure GitHub Actions for CI/CD
 
 ## Notes
 - Regular progress reviews needed

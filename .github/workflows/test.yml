@@ -2,12 +2,12 @@ name: Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
     paths:
       - 'packages/shared/**'
       - '.github/workflows/test.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
     paths:
       - 'packages/shared/**'
       - '.github/workflows/test.yml'
@@ -25,23 +25,63 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
+        cache-dependency-path: '**/yarn.lock'
     
-    - name: Install Yarn
-      run: npm install -g yarn
+    - name: Enable Corepack
+      run: |
+        corepack enable
+        echo "Node version: $(node --version)"
+        echo "Yarn version: $(yarn --version)"
+        yarn config list
     
     - name: Install Dependencies
-      run: yarn install
+      run: |
+        yarn install --immutable
+        echo "Workspace node_modules:"
+        ls -la node_modules/
+        echo "\nShared package node_modules:"
+        ls -la packages/shared/node_modules/ || echo "No node_modules directory in shared package"
+
+    - name: Build
+      working-directory: packages/shared
+      run: |
+        echo "=== Building Package ==="
+        yarn build || {
+          echo "Build failed. Checking TypeScript configuration:"
+          cat tsconfig.json
+          echo "\nChecking source files:"
+          find src -type f -name "*.ts"
+          exit 1
+        }
 
     - name: Run Lint
-      run: yarn workspace shared lint
+      working-directory: packages/shared
+      run: |
+        echo "=== Running Lint ==="
+        yarn lint --max-warnings 0 || {
+          echo "Linting failed. Running with --debug flag:"
+          yarn lint --debug
+          exit 1
+        }
 
     - name: Run Tests
-      run: yarn workspace shared test
+      working-directory: packages/shared
+      run: |
+        echo "=== Running Tests ==="
+        yarn test --verbose --coverage || {
+          echo "Tests failed. Checking environment:"
+          node -e "console.log('Node.js version:', process.version)"
+          node -e "console.log('Test environment:', process.env.NODE_ENV)"
+          exit 1
+        }
+      env:
+        NODE_ENV: test
+        CI: true
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4

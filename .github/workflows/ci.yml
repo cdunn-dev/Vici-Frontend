@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, test/branch-protection ]
 
 jobs:
   test:
@@ -13,27 +13,68 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x]
+      fail-fast: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        cache: 'yarn'
+        cache-dependency-path: '**/yarn.lock'
     
-    - name: Install dependencies
-      run: npm ci
+    - name: Enable Corepack
+      run: |
+        corepack enable
+        echo "Node version: $(node --version)"
+        echo "Yarn version: $(yarn --version)"
+        yarn config list
+    
+    - name: Install Dependencies
+      run: |
+        yarn install --immutable
+        echo "Workspace node_modules:"
+        ls -la node_modules/
+        echo "\nShared package node_modules:"
+        ls -la packages/shared/node_modules/ || echo "No node_modules directory in shared package"
       
-    - name: Run linting
-      run: npm run lint
+    - name: Run Lint
+      working-directory: packages/shared
+      run: |
+        echo "=== Running Lint ==="
+        yarn lint --max-warnings 0 || {
+          echo "Linting failed. Running with --debug flag:"
+          yarn lint --debug
+          exit 1
+        }
       
-    - name: Run tests
-      run: npm test
+    - name: Run Tests
+      working-directory: packages/shared
+      run: |
+        echo "=== Running Tests ==="
+        yarn test --verbose --coverage || {
+          echo "Tests failed. Checking environment:"
+          node -e "console.log('Node.js version:', process.version)"
+          node -e "console.log('Test environment:', process.env.NODE_ENV)"
+          exit 1
+        }
+      env:
+        NODE_ENV: test
+        CI: true
       
     - name: Build
-      run: npm run build
+      working-directory: packages/shared
+      run: |
+        echo "=== Building Package ==="
+        yarn build || {
+          echo "Build failed. Checking TypeScript configuration:"
+          cat tsconfig.json
+          echo "\nChecking source files:"
+          find src -type f -name "*.ts"
+          exit 1
+        }
 
   deploy:
     needs: test
@@ -41,22 +82,42 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Use Node.js
-      uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: '18.x'
-        cache: 'npm'
+        cache: 'yarn'
+        cache-dependency-path: '**/yarn.lock'
     
-    - name: Install dependencies
-      run: npm ci
+    - name: Enable Corepack
+      run: |
+        corepack enable
+        echo "Node version: $(node --version)"
+        echo "Yarn version: $(yarn --version)"
+        yarn config list
+    
+    - name: Install Dependencies
+      run: |
+        yarn install --immutable
+        echo "Workspace node_modules:"
+        ls -la node_modules/
       
     - name: Build
-      run: npm run build
+      working-directory: packages/shared
+      run: |
+        echo "=== Building Package ==="
+        yarn build || {
+          echo "Build failed. Checking TypeScript configuration:"
+          cat tsconfig.json
+          echo "\nChecking source files:"
+          find src -type f -name "*.ts"
+          exit 1
+        }
       
     - name: Deploy to Production
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: npm run deploy 
+      run: yarn deploy 
