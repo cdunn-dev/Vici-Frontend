@@ -1,71 +1,150 @@
 import Foundation
-import Combine
+import SwiftUI
 
 class AuthViewModel: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
+    private let authService = AuthService.shared
     
-    private let authService: AuthService
-    private var cancellables = Set<AnyCancellable>()
+    @Published var user: User?
+    @Published var isLoggedIn: Bool
+    @Published var isLoading = false
+    @Published var errorMessage: String?
     
-    init(authService: AuthService = AuthService()) {
-        self.authService = authService
-        checkAuthStatus()
-    }
-    
-    func checkAuthStatus() {
-        if let token = UserDefaults.standard.string(forKey: "authToken"), !token.isEmpty {
-            // Auto-login with stored token
+    init() {
+        // Initialize login state from keychain
+        self.isLoggedIn = authService.isLoggedIn()
+        
+        // Attempt to fetch the current user if logged in
+        if self.isLoggedIn {
             Task {
-                do {
-                    self.currentUser = try await authService.getCurrentUser()
-                    DispatchQueue.main.async {
-                        self.isAuthenticated = true
-                    }
-                } catch {
-                    print("Failed to auto-login: \(error)")
-                    DispatchQueue.main.async {
-                        self.logout()
-                    }
-                }
+                await fetchCurrentUser()
             }
         }
     }
     
-    func login(email: String, password: String) async throws {
-        let response = try await authService.login(email: email, password: password)
+    // MARK: - Login
+    
+    func login(email: String, password: String) async {
+        await MainActor.run { 
+            isLoading = true
+            errorMessage = nil
+        }
         
-        UserDefaults.standard.set(response.token, forKey: "authToken")
-        
-        DispatchQueue.main.async {
-            self.currentUser = response.user
-            self.isAuthenticated = true
+        do {
+            let user = try await authService.login(email: email, password: password)
+            await MainActor.run {
+                self.user = user
+                self.isLoggedIn = true
+                self.isLoading = false
+            }
+        } catch let error as APIError {
+            await MainActor.run {
+                self.errorMessage = "Login failed: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Login failed: \(error.localizedDescription)"
+                self.isLoading = false
+            }
         }
     }
     
-    func register(email: String, password: String) async throws {
-        let response = try await authService.register(email: email, password: password)
+    // MARK: - Registration
+    
+    func register(name: String, email: String, password: String) async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
         
-        UserDefaults.standard.set(response.token, forKey: "authToken")
-        
-        DispatchQueue.main.async {
-            self.currentUser = response.user
-            self.isAuthenticated = true
+        do {
+            let user = try await authService.register(email: email, password: password, name: name)
+            await MainActor.run {
+                self.user = user
+                self.isLoggedIn = true
+                self.isLoading = false
+            }
+        } catch let error as APIError {
+            await MainActor.run {
+                self.errorMessage = "Registration failed: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Registration failed: \(error.localizedDescription)"
+                self.isLoading = false
+            }
         }
     }
+    
+    // MARK: - Logout
     
     func logout() {
-        UserDefaults.standard.removeObject(forKey: "authToken")
+        authService.logout()
         
-        DispatchQueue.main.async {
-            self.currentUser = nil
-            self.isAuthenticated = false
+        // Update UI state
+        Task { @MainActor in
+            self.user = nil
+            self.isLoggedIn = false
         }
     }
     
-    func connectStrava(code: String) async throws {
-        try await authService.connectStrava(code: code)
-        // After connecting, refresh user data to get updated Strava connection status
-        self.currentUser = try await authService.getCurrentUser()
+    // MARK: - User Info
+    
+    func fetchCurrentUser() async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
+        
+        do {
+            let user = try await authService.getCurrentUser()
+            await MainActor.run {
+                self.user = user
+                self.isLoading = false
+            }
+        } catch let error as APIError {
+            await MainActor.run {
+                self.errorMessage = "Failed to fetch user: \(error.localizedDescription)"
+                self.isLoading = false
+                
+                // If unauthorized, log out
+                if case .unauthorized = error {
+                    self.logout()
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to fetch user: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        }
+    }
+    
+    // MARK: - Profile Update
+    
+    func updateProfile(name: String? = nil, email: String? = nil, bio: String? = nil) async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
+        
+        do {
+            let updatedUser = try await authService.updateUser(name: name, email: email, bio: bio)
+            await MainActor.run {
+                self.user = updatedUser
+                self.isLoading = false
+            }
+        } catch let error as APIError {
+            await MainActor.run {
+                self.errorMessage = "Failed to update profile: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to update profile: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        }
     }
 } 

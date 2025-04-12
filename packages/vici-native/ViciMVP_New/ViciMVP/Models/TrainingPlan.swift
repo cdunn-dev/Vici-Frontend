@@ -1,90 +1,117 @@
 import Foundation
 
-struct TrainingPlan: Identifiable, Codable {
-    let id: Int
-    let userId: Int
-    let name: String
-    let description: String?
-    let goal: String
-    let goalType: GoalType
-    let startDate: Date
-    let endDate: Date
-    let currentWeek: Int
-    let totalWeeks: Int
-    var workouts: [Workout]
-    let createdAt: Date
-    let updatedAt: Date
+/// A training plan in the Vici system, aligning with TypeScript TrainingPlan interface
+struct TrainingPlan: Codable, Identifiable, Hashable {
+    var id: String
+    var userId: String
+    var name: String
+    var description: String?
+    var goal: String?
+    var startDate: Date
+    var endDate: Date
+    var isActive: Bool
+    var isCompleted: Bool
+    var createdAt: Date?
+    var updatedAt: Date?
+    var workouts: [Workout]?
     
     enum CodingKeys: String, CodingKey {
         case id
-        case userId = "user_id"
+        case userId
         case name
         case description
         case goal
-        case goalType = "goal_type"
-        case startDate = "start_date"
-        case endDate = "end_date"
-        case currentWeek = "current_week"
-        case totalWeeks = "total_weeks"
+        case startDate
+        case endDate
+        case isActive
+        case isCompleted
+        case createdAt
+        case updatedAt
         case workouts
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
     }
     
-    // Helper computed properties
-    var currentWeekWorkouts: [Workout] {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
-        let weekEndDate = calendar.date(byAdding: .day, value: 7, to: weekStartDate)!
-        
-        return workouts.filter { workout in
-            workout.date >= weekStartDate && workout.date < weekEndDate
-        }
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
     
-    var currentWeekDistance: Double {
-        currentWeekWorkouts.reduce(0) { $0 + ($1.distance ?? 0) }
-    }
-    
-    var percentComplete: Double {
-        let completedWorkouts = workouts.filter { $0.status == .completed }.count
-        let totalWorkouts = workouts.count
-        return totalWorkouts > 0 ? Double(completedWorkouts) / Double(totalWorkouts) * 100.0 : 0.0
+    static func == (lhs: TrainingPlan, rhs: TrainingPlan) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 
-enum GoalType: String, Codable, CaseIterable {
-    case general = "General Fitness"
-    case race = "Race"
-    case distance = "Distance Goal"
-    case time = "Time Goal"
-}
+// MARK: - Date Conversion Extensions
 
-// Mock data extension
 extension TrainingPlan {
-    static var mock: TrainingPlan {
-        let startDate = Calendar.current.date(byAdding: .day, value: -14, to: Date())!
-        let endDate = Calendar.current.date(byAdding: .day, value: 70, to: startDate)!
+    /// Creates a TrainingPlan from TypeScript-compatible ISO8601 date strings
+    static func fromTypeScript(
+        id: String,
+        userId: String,
+        name: String,
+        description: String?,
+        goal: String?,
+        startDate: String,
+        endDate: String,
+        isActive: Bool,
+        isCompleted: Bool,
+        createdAt: String?,
+        updatedAt: String?,
+        workouts: [Workout]?
+    ) -> TrainingPlan? {
+        let dateFormatter = ISO8601DateFormatter()
+        
+        guard let startDateObj = dateFormatter.date(from: startDate),
+              let endDateObj = dateFormatter.date(from: endDate) else {
+            return nil
+        }
+        
+        let createdAtDate = createdAt != nil ? dateFormatter.date(from: createdAt!) : nil
+        let updatedAtDate = updatedAt != nil ? dateFormatter.date(from: updatedAt!) : nil
         
         return TrainingPlan(
-            id: 1,
-            userId: 1,
-            name: "10K Training Plan",
-            description: "A 12-week plan to prepare for a 10K race",
-            goal: "Complete a 10K race in under 50 minutes",
-            goalType: .race,
-            startDate: startDate,
-            endDate: endDate,
-            currentWeek: 3,
-            totalWeeks: 12,
-            workouts: [
-                Workout.mockEasyRun,
-                Workout.mockIntervalWorkout,
-                Workout.mockLongRun
-            ],
-            createdAt: Date(),
-            updatedAt: Date()
+            id: id,
+            userId: userId,
+            name: name,
+            description: description,
+            goal: goal,
+            startDate: startDateObj,
+            endDate: endDateObj,
+            isActive: isActive,
+            isCompleted: isCompleted,
+            createdAt: createdAtDate,
+            updatedAt: updatedAtDate,
+            workouts: workouts
         )
     }
-}
+    
+    // Computed properties for formatted display
+    
+    var formattedDateRange: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .none
+        
+        return "\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))"
+    }
+    
+    var durationInWeeks: Int {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: startDate, to: endDate)
+        guard let days = components.day else { return 0 }
+        return (days / 7) + (days % 7 > 0 ? 1 : 0)  // Round up to include partial weeks
+    }
+    
+    var completedWorkoutsCount: Int {
+        return workouts?.filter { $0.isCompleted }.count ?? 0
+    }
+    
+    var totalWorkoutsCount: Int {
+        return workouts?.count ?? 0
+    }
+    
+    var progressPercentage: Double {
+        let total = totalWorkoutsCount
+        if total == 0 { return 0.0 }
+        return Double(completedWorkoutsCount) / Double(total) * 100.0
+    }
+} 

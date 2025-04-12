@@ -1,129 +1,91 @@
 import Foundation
 
-struct Workout: Identifiable, Codable {
-    let id: Int
-    let planId: Int?
-    let title: String
-    let description: String
-    let date: Date
-    let duration: TimeInterval?
-    let distance: Double?
-    let workoutType: WorkoutType
-    let status: WorkoutStatus
-    let activityId: Int?
+/// A workout in the Vici system, aligning with TypeScript Workout interface
+struct Workout: Codable, Identifiable, Hashable {
+    var id: String
+    var planId: String?
+    var userId: String
+    var name: String
+    var description: String?
+    var scheduledDate: Date
+    var completed: Bool
+    var completedDate: Date?
+    var duration: Int?  // Duration in minutes
+    var distance: Double?  // Distance in meters
+    var activities: [Activity]?
+    var createdAt: Date?
+    var updatedAt: Date?
     
-    // Optional - completed information
-    let completedDate: Date?
-    let completedDistance: Double?
-    let completedDuration: TimeInterval?
-    let notes: String?
-    
-    let createdAt: Date
-    let updatedAt: Date
-    
+    // CodingKeys to map between Swift and API JSON
     enum CodingKeys: String, CodingKey {
         case id
-        case planId = "plan_id"
-        case title
+        case planId
+        case userId
+        case name
         case description
-        case date
+        case scheduledDate
+        case completed
+        case completedDate
         case duration
         case distance
-        case workoutType = "workout_type"
-        case status
-        case activityId = "activity_id"
-        case completedDate = "completed_date"
-        case completedDistance = "completed_distance"
-        case completedDuration = "completed_duration"
-        case notes
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
+        case activities
+        case createdAt
+        case updatedAt
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: Workout, rhs: Workout) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 
-enum WorkoutType: String, Codable, CaseIterable {
-    case easy = "Easy Run"
-    case tempo = "Tempo Run"
-    case interval = "Interval"
-    case longRun = "Long Run"
-    case recovery = "Recovery Run"
-    case fartlek = "Fartlek"
-    case hillRepeats = "Hill Repeats"
-    case crossTraining = "Cross Training"
-    case strength = "Strength"
-    case rest = "Rest"
-}
+// MARK: - Date Conversion Extensions
 
-enum WorkoutStatus: String, Codable, CaseIterable {
-    case scheduled = "Scheduled"
-    case completed = "Completed"
-    case skipped = "Skipped"
-    case missed = "Missed"
-    case inProgress = "In Progress"
-}
-
-// Mock data extension
 extension Workout {
-    static var mockEasyRun: Workout {
-        Workout(
-            id: 1,
-            planId: 1,
-            title: "Easy Run",
-            description: "An easy-paced 5K run to build aerobic base",
-            date: Date(),
-            duration: 30 * 60, // 30 minutes
-            distance: 5.0,
-            workoutType: .easy,
-            status: .scheduled,
-            activityId: nil,
-            completedDate: nil,
-            completedDistance: nil,
-            completedDuration: nil,
-            notes: nil,
-            createdAt: Date(),
-            updatedAt: Date()
+    /// Creates a Workout from TypeScript-compatible ISO8601 date strings
+    static func fromTypeScript(
+        id: String,
+        planId: String?,
+        userId: String,
+        name: String,
+        description: String?,
+        scheduledDate: String,
+        completed: Bool,
+        completedDate: String?,
+        duration: Int?,
+        distance: Double?,
+        activities: [Activity]?,
+        createdAt: String?,
+        updatedAt: String?
+    ) -> Workout? {
+        let dateFormatter = ISO8601DateFormatter()
+        
+        guard let scheduledDateObj = dateFormatter.date(from: scheduledDate) else {
+            return nil
+        }
+        
+        let completedDateObj = completedDate != nil ? dateFormatter.date(from: completedDate!) : nil
+        let createdAtDate = createdAt != nil ? dateFormatter.date(from: createdAt!) : nil
+        let updatedAtDate = updatedAt != nil ? dateFormatter.date(from: updatedAt!) : nil
+        
+        return Workout(
+            id: id,
+            planId: planId,
+            userId: userId,
+            name: name,
+            description: description,
+            scheduledDate: scheduledDateObj,
+            completed: completed,
+            completedDate: completedDateObj,
+            duration: duration,
+            distance: distance,
+            activities: activities,
+            createdAt: createdAtDate,
+            updatedAt: updatedAtDate
         )
     }
-    
-    static var mockIntervalWorkout: Workout {
-        Workout(
-            id: 2,
-            planId: 1,
-            title: "Interval Session",
-            description: "8 x 400m repeats with 200m recovery jogs",
-            date: Calendar.current.date(byAdding: .day, value: 2, to: Date())!,
-            duration: 45 * 60, // 45 minutes
-            distance: 7.0,
-            workoutType: .interval,
-            status: .scheduled,
-            activityId: nil,
-            completedDate: nil,
-            completedDistance: nil,
-            completedDuration: nil,
-            notes: nil,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-    }
-    
-    static var mockLongRun: Workout {
-        Workout(
-            id: 3,
-            planId: 1,
-            title: "Long Run",
-            description: "Long slow distance run to build endurance",
-            date: Calendar.current.date(byAdding: .day, value: 5, to: Date())!,
-            duration: 70 * 60, // 70 minutes
-            distance: 12.0,
-            workoutType: .longRun,
-            status: .scheduled,
-            activityId: nil,
-            completedDate: nil,
-            completedDistance: nil,
-            completedDuration: nil,
-            notes: nil,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-    }
-}
+} 

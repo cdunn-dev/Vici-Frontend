@@ -1,118 +1,184 @@
 import Foundation
 import CoreLocation
 
-struct Activity: Identifiable, Codable {
-    let id: Int
-    let userId: Int
-    let workoutId: Int?
-    let name: String
-    let activityType: ActivityType
-    let startDate: Date
-    let endDate: Date
-    let duration: TimeInterval
-    let distance: Double
-    let elevationGain: Double?
-    let avgHeartRate: Double?
-    let maxHeartRate: Double?
-    let avgPace: Double?
-    let maxPace: Double?
-    let calories: Double?
-    let polyline: String?
-    let source: ActivitySource
-    let stravaId: Int64?
-    let gpsData: [GPSPoint]?
-    let createdAt: Date
-    let updatedAt: Date
+/// An activity in the Vici system, representing a completed workout or training session, 
+/// aligning with TypeScript Activity interface
+struct Activity: Codable, Identifiable, Hashable {
+    var id: String
+    var userId: String
+    var workoutId: String?
+    var type: String      // e.g., "run", "bike", "swim"
+    var name: String
+    var description: String?
+    var startDate: Date
+    var endDate: Date
+    var duration: Int      // Duration in seconds
+    var distance: Double?  // Distance in meters
+    var avgHeartRate: Int?
+    var maxHeartRate: Int?
+    var avgPace: Double?   // Pace in seconds per kilometer
+    var calories: Int?
+    var elevationGain: Double?
+    var source: String?    // e.g., "manual", "strava", "garmin"
+    var polyline: String?  // Encoded path for maps
+    var createdAt: Date?
+    var updatedAt: Date?
     
     enum CodingKeys: String, CodingKey {
         case id
-        case userId = "user_id"
-        case workoutId = "workout_id" 
+        case userId
+        case workoutId
+        case type
         case name
-        case activityType = "activity_type"
-        case startDate = "start_date"
-        case endDate = "end_date"
+        case description
+        case startDate
+        case endDate
         case duration
         case distance
-        case elevationGain = "elevation_gain"
-        case avgHeartRate = "avg_heart_rate"
-        case maxHeartRate = "max_heart_rate"
-        case avgPace = "avg_pace"
-        case maxPace = "max_pace"
+        case avgHeartRate
+        case maxHeartRate
+        case avgPace
         case calories
-        case polyline
+        case elevationGain
         case source
-        case stravaId = "strava_id"
-        case gpsData = "gps_data"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
-}
-
-struct GPSPoint: Codable {
-    let latitude: Double
-    let longitude: Double
-    let elevation: Double?
-    let timestamp: Date
-    let heartRate: Int?
-    
-    enum CodingKeys: String, CodingKey {
-        case latitude
-        case longitude
-        case elevation
-        case timestamp
-        case heartRate = "heart_rate"
+        case polyline
+        case createdAt
+        case updatedAt
     }
     
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: Activity, rhs: Activity) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 
-enum ActivityType: String, Codable, CaseIterable {
-    case run = "Run"
-    case walk = "Walk"
-    case hike = "Hike"
-    case ride = "Ride"
-    case swim = "Swim"
-    case yoga = "Yoga"
-    case strength = "Strength"
-    case crossTraining = "Cross Training"
-    case other = "Other"
-}
+// MARK: - Date Conversion Extensions
 
-enum ActivitySource: String, Codable, CaseIterable {
-    case strava = "Strava"
-    case manual = "Manual"
-    case vici = "Vici"
-    case appleHealth = "Apple Health"
-}
-
-// Mock data extension
 extension Activity {
-    static var mock: Activity {
-        Activity(
-            id: 1,
-            userId: 1,
-            workoutId: 1,
-            name: "Morning Run",
-            activityType: .run,
-            startDate: Date().addingTimeInterval(-3600), // 1 hour ago
-            endDate: Date(),
-            duration: 3600, // 1 hour
-            distance: 10.5, // 10.5 km
-            elevationGain: 125,
-            avgHeartRate: 148,
-            maxHeartRate: 172,
-            avgPace: 343, // 5:43 min/km
-            maxPace: 280, // 4:40 min/km
-            calories: 750,
-            polyline: nil,
-            source: .manual,
-            stravaId: nil,
-            gpsData: nil,
-            createdAt: Date(),
-            updatedAt: Date()
+    /// Creates an Activity from TypeScript-compatible ISO8601 date strings
+    static func fromTypeScript(
+        id: String,
+        userId: String,
+        workoutId: String?,
+        type: String,
+        name: String,
+        description: String?,
+        startDate: String,
+        endDate: String,
+        duration: Int,
+        distance: Double?,
+        avgHeartRate: Int?,
+        maxHeartRate: Int?,
+        avgPace: Double?,
+        calories: Int?,
+        elevationGain: Double?,
+        source: String?,
+        polyline: String?,
+        createdAt: String?,
+        updatedAt: String?
+    ) -> Activity? {
+        let dateFormatter = ISO8601DateFormatter()
+        
+        guard let startDateObj = dateFormatter.date(from: startDate),
+              let endDateObj = dateFormatter.date(from: endDate) else {
+            return nil
+        }
+        
+        let createdAtDate = createdAt != nil ? dateFormatter.date(from: createdAt!) : nil
+        let updatedAtDate = updatedAt != nil ? dateFormatter.date(from: updatedAt!) : nil
+        
+        return Activity(
+            id: id,
+            userId: userId,
+            workoutId: workoutId,
+            type: type,
+            name: name,
+            description: description,
+            startDate: startDateObj,
+            endDate: endDateObj,
+            duration: duration,
+            distance: distance,
+            avgHeartRate: avgHeartRate,
+            maxHeartRate: maxHeartRate,
+            avgPace: avgPace,
+            calories: calories,
+            elevationGain: elevationGain,
+            source: source,
+            polyline: polyline,
+            createdAt: createdAtDate,
+            updatedAt: updatedAtDate
         )
     }
+    
+    // Computed properties for formatted display
+    
+    var formattedDuration: String {
+        let hours = duration / 3600
+        let minutes = (duration % 3600) / 60
+        let seconds = duration % 60
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%02d:%02d", minutes, seconds)
+        }
+    }
+    
+    var formattedDistance: String? {
+        guard let distance = distance else { return nil }
+        
+        if distance >= 1000 {
+            return String(format: "%.2f km", distance / 1000)
+        } else {
+            return String(format: "%.0f m", distance)
+        }
+    }
+    
+    var formattedPace: String? {
+        guard let pace = avgPace else { return nil }
+        
+        let minutes = Int(pace) / 60
+        let seconds = Int(pace) % 60
+        
+        return String(format: "%d:%02d /km", minutes, seconds)
+    }
 }
+
+// MARK: - Coordinate Mapping
+
+/// Represents a GPS coordinate point in an activity
+struct ActivityCoordinate: Codable, Equatable, Hashable {
+    /// Latitude in degrees
+    var latitude: Double
+    
+    /// Longitude in degrees
+    var longitude: Double
+    
+    /// Elevation in meters
+    var elevation: Double?
+    
+    /// Timestamp of the coordinate
+    var timestamp: Date
+    
+    /// Heart rate at this point if available
+    var heartRate: Int?
+    
+    /// Speed at this point in meters per second
+    var speed: Double?
+    
+    /// Convert to CLLocationCoordinate2D for mapping
+    var clCoordinate: CLLocationCoordinate2D {
+        return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(latitude)
+        hasher.combine(longitude)
+        hasher.combine(timestamp)
+    }
+} 

@@ -1,173 +1,195 @@
 import Foundation
 
-enum LLMRole: String {
-    case system
-    case user
-    case assistant
-}
-
-struct LLMMessage: Codable {
-    let role: String
-    let content: String
-    
-    init(role: LLMRole, content: String) {
-        self.role = role.rawValue
-        self.content = content
-    }
-}
-
+/// Service for interacting with the LLM (Large Language Model) for intelligent features
 class LLMService {
+    // MARK: - Singleton
     static let shared = LLMService()
     
+    // MARK: - Properties
     private let apiClient = APIClient.shared
+    private let authService = AuthService.shared
+    
+    // MARK: - Initialization
+    private init() {}
     
     // MARK: - Training Plan Generation
     
+    /// Generate a training plan based on user goals and profile
     func generateTrainingPlan(
-        userDetails: String,
         goal: String,
-        duration: Int,
-        constraints: String,
-        preferences: String
+        goalDate: Date,
+        experienceLevel: String,
+        weeklyFrequency: Int,
+        additionalInfo: String? = nil
     ) async throws -> TrainingPlan {
-        let messages = [
-            LLMMessage(role: .system, content: "You are a personal trainer AI that creates training plans based on user goals and constraints."),
-            LLMMessage(role: .user, content: """
-                Generate a \(duration)-week training plan for a user with the following details:
-                
-                User Info: \(userDetails)
-                
-                Goal: \(goal)
-                
-                Constraints: \(constraints)
-                
-                Preferences: \(preferences)
-                
-                Please provide a structured training plan with clear progression and rest days.
-                """)
-        ]
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
+        }
         
-        let parameters: [String: Any] = [
-            "messages": messages.map { ["role": $0.role, "content": $0.content] },
+        let dateFormatter = ISO8601DateFormatter()
+        
+        let requestBody: [String: Any] = [
             "goal": goal,
-            "duration": duration,
-            "model": "gpt-4" // or whichever model is most appropriate
+            "goalDate": dateFormatter.string(from: goalDate),
+            "experienceLevel": experienceLevel,
+            "weeklyFrequency": weeklyFrequency,
+            "additionalInfo": additionalInfo ?? ""
         ]
         
-        return try await apiClient.post(endpoint: "ai/training-plans/generate", parameters: parameters)
+        let response: [String: Any] = try await apiClient.post(
+            endpoint: "/training/generate-plan",
+            body: requestBody
+        )
+        
+        // Parse training plan from response
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: response)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(TrainingPlan.self, from: jsonData)
+        } catch {
+            throw APIError.decodingError("Failed to decode training plan: \(error.localizedDescription)")
+        }
     }
     
-    // MARK: - Workout Generation
+    // MARK: - Ask Vici (General Questions)
     
-    func generateWorkout(
-        userDetails: String,
-        goal: String,
-        constraints: String,
-        preferences: String
-    ) async throws -> Workout {
-        let messages = [
-            LLMMessage(role: .system, content: "You are a personal trainer AI that creates workout plans based on user goals and constraints."),
-            LLMMessage(role: .user, content: """
-                Generate a workout for a user with the following details:
-                
-                User Info: \(userDetails)
-                
-                Goal: \(goal)
-                
-                Constraints: \(constraints)
-                
-                Preferences: \(preferences)
-                
-                Please provide a structured workout with clear instructions.
-                """)
+    /// Ask Vici a general running/training question
+    func askGeneralQuestion(question: String) async throws -> String {
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
+        }
+        
+        let requestBody: [String: Any] = [
+            "question": question
         ]
         
-        let parameters: [String: Any] = [
-            "messages": messages.map { ["role": $0.role, "content": $0.content] },
-            "goal": goal,
-            "model": "gpt-4" // or whichever model is most appropriate
+        let response: [String: Any] = try await apiClient.post(
+            endpoint: "/training/ask",
+            body: requestBody
+        )
+        
+        guard let answer = response["answer"] as? String else {
+            throw APIError.decodingError("Invalid response format")
+        }
+        
+        return answer
+    }
+    
+    // MARK: - Plan-specific Questions
+    
+    /// Ask Vici about a specific training plan
+    func askAboutPlan(planId: String, question: String) async throws -> String {
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
+        }
+        
+        let requestBody: [String: Any] = [
+            "question": question
         ]
         
-        return try await apiClient.post(endpoint: "ai/workouts/generate", parameters: parameters)
+        let response: [String: Any] = try await apiClient.post(
+            endpoint: "/training/plans/\(planId)/ask-vici",
+            body: requestBody
+        )
+        
+        guard let answer = response["answer"] as? String else {
+            throw APIError.decodingError("Invalid response format")
+        }
+        
+        return answer
+    }
+    
+    // MARK: - Plan Adjustments
+    
+    /// Request adjustments to a training plan
+    func requestPlanAdjustment(
+        planId: String,
+        adjustmentRequest: String,
+        reason: String? = nil
+    ) async throws -> [String: Any] {
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
+        }
+        
+        let requestBody: [String: Any] = [
+            "adjustmentRequest": adjustmentRequest,
+            "reason": reason ?? ""
+        ]
+        
+        let response: [String: Any] = try await apiClient.post(
+            endpoint: "/training/plans/\(planId)/ask-vici",
+            body: requestBody
+        )
+        
+        guard let proposedChanges = response["proposedChanges"] as? [String: Any] else {
+            throw APIError.decodingError("Invalid response format")
+        }
+        
+        return proposedChanges
+    }
+    
+    /// Approve proposed changes to a training plan
+    func approvePlanChanges(planId: String, changeId: String) async throws -> TrainingPlan {
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
+        }
+        
+        let requestBody: [String: Any] = [
+            "changeId": changeId
+        ]
+        
+        let response: [String: Any] = try await apiClient.post(
+            endpoint: "/training/plans/\(planId)/approve-changes",
+            body: requestBody
+        )
+        
+        // Parse updated training plan
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: response)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(TrainingPlan.self, from: jsonData)
+        } catch {
+            throw APIError.decodingError("Failed to decode updated training plan: \(error.localizedDescription)")
+        }
     }
     
     // MARK: - Workout Analysis
     
-    func analyzeWorkoutPerformance(workout: Workout, activityData: [String: Any]) async throws -> String {
-        let parameters: [String: Any] = [
-            "workout_id": workout.id,
-            "activity_data": activityData
-        ]
-        
-        struct AnalysisResponse: Codable {
-            let analysis: String
+    /// Get AI analysis of a completed workout
+    func analyzeWorkout(workoutId: String) async throws -> String {
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
         }
         
-        let response: AnalysisResponse = try await apiClient.post(
-            endpoint: "ai/workouts/analyze",
-            parameters: parameters
+        let response: [String: Any] = try await apiClient.get(
+            endpoint: "/training/workouts/\(workoutId)/analyze"
         )
         
-        return response.analysis
-    }
-    
-    // MARK: - Coaching Feedback
-    
-    func getCoachingFeedback(
-        user: User,
-        recentWorkouts: [Workout],
-        goal: String
-    ) async throws -> String {
-        let parameters: [String: Any] = [
-            "user_id": user.id,
-            "recent_workouts": recentWorkouts.map { $0.id },
-            "goal": goal
-        ]
-        
-        struct FeedbackResponse: Codable {
-            let feedback: String
+        guard let analysis = response["analysis"] as? String else {
+            throw APIError.decodingError("Invalid response format")
         }
         
-        let response: FeedbackResponse = try await apiClient.post(
-            endpoint: "ai/feedback",
-            parameters: parameters
-        )
-        
-        return response.feedback
+        return analysis
     }
     
-    // MARK: - Chat with AI Coach
+    // MARK: - Training Tips
     
-    func chatWithAICoach(messages: [LLMMessage]) async throws -> String {
-        let parameters: [String: Any] = [
-            "messages": messages.map { ["role": $0.role, "content": $0.content] }
-        ]
-        
-        struct ChatResponse: Codable {
-            let message: String
+    /// Get a personalized training tip
+    func getDailyTrainingTip() async throws -> String {
+        guard authService.isLoggedIn() else {
+            throw APIError.unauthorized
         }
         
-        let response: ChatResponse = try await apiClient.post(
-            endpoint: "ai/chat",
-            parameters: parameters
+        let response: [String: Any] = try await apiClient.get(
+            endpoint: "/training/tip"
         )
         
-        return response.message
-    }
-    
-    // MARK: - Workout Adaptation
-    
-    func adaptWorkout(
-        workoutId: Int,
-        reason: String,
-        constraints: String
-    ) async throws -> Workout {
-        let parameters: [String: Any] = [
-            "workout_id": workoutId,
-            "reason": reason,
-            "constraints": constraints
-        ]
+        guard let tip = response["tip"] as? String else {
+            throw APIError.decodingError("Invalid response format")
+        }
         
-        return try await apiClient.post(endpoint: "ai/workouts/adapt", parameters: parameters)
+        return tip
     }
 } 
