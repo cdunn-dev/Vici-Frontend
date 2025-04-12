@@ -1,0 +1,33 @@
+# Setting up ViciNative in Xcode
+
+Follow these steps to set up a new Xcode project for the ViciNative app:
+
+1. Open Xcode
+2. Create new project (File > New > Project...)
+3. Select iOS App
+4. Enter the details:
+   - Product Name: ViciNative
+   - Interface: SwiftUI
+   - Life Cycle: SwiftUI App
+   - Language: Swift
+   - Select "None" for storage (not Core Data)
+
+5. Save the project in: /Users/chrisdunn/Documents/GitHub/Vici-App/packages/vici-native/ios/ViciNative/
+
+6. After the project is created, add the existing Swift files:
+   - Right-click on the ViciNative group in the Project Navigator
+   - Select "Add Files to 'ViciNative'..."
+   - Select all the Swift files in the ViciNative folder (MockData.swift, ViciNativeApp.swift, AuthenticationView.swift, MainTabView.swift)
+   - Make sure "Copy items if needed" is NOT selected (files are already in the right location)
+   - Click "Add"
+
+7. Delete any auto-generated placeholder files:
+   - ViciNativeApp.swift (it will be replaced by our custom one)
+   - ContentView.swift (not needed)
+
+8. Build and run the project (⌘R)
+
+If you encounter any build issues, make sure that:
+1. The @main attribute only appears in ViciNativeApp.swift
+2. All required files are included in the project target
+3. There are no duplicate declarations of structures or classes 
