@@ -1,34 +1,22 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @EnvironmentObject var userAuth: UserAuthentication
-    @State private var selectedTab = 0
-    
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TrainingPlanView()
+        TabView {
+            Text("Home")
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+            
+            Text("Training")
                 .tabItem {
                     Label("Training", systemImage: "figure.run")
                 }
-                .tag(0)
             
-            TrainingLogView()
+            Text("Profile")
                 .tabItem {
-                    Label("Log", systemImage: "list.bullet.clipboard")
+                    Label("Profile", systemImage: "person")
                 }
-                .tag(1)
-            
-            AskViciView()
-                .tabItem {
-                    Label("Ask Vici", systemImage: "bubble.left.fill")
-                }
-                .tag(2)
-            
-            ProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
-                .tag(3)
         }
     }
 }

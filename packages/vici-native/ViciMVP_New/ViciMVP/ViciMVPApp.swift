@@ -1,57 +1,64 @@
 import SwiftUI
 
-// User authentication model
-class UserAuthentication: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+@main
+struct ViciMVPApp: App {
+    @StateObject private var authViewModel = AuthViewModel()
     
-    let authService = AuthenticationService()
+    var body: some Scene {
+        WindowGroup {
+            if authViewModel.isAuthenticated {
+                MainTabView()
+                    .environmentObject(authViewModel)
+            } else {
+                AuthView()
+                    .environmentObject(authViewModel)
+            }
+        }
+    }
+}
+
+class AuthViewModel: ObservableObject {
+    @Published var isAuthenticated: Bool = false
+    @Published var currentUser: User?
+    private let authService = AuthService.shared
     
     init() {
-        // Set up observers for the auth service
-        authService.$isAuthenticated
-            .assign(to: &$isAuthenticated)
-        
-        authService.$currentUser
-            .assign(to: &$currentUser)
-            
-        authService.$isLoading
-            .assign(to: &$isLoading)
-            
-        authService.$errorMessage
-            .assign(to: &$errorMessage)
+        // Check if user is already logged in
+        if let user = authService.currentUser {
+            self.currentUser = user
+            self.isAuthenticated = true
+        }
     }
     
-    func login(email: String, password: String) {
-        authService.login(email: email, password: password)
+    func login(email: String, password: String) async {
+        do {
+            let user = try await authService.login(email: email, password: password)
+            DispatchQueue.main.async {
+                self.currentUser = user
+                self.isAuthenticated = true
+            }
+        } catch {
+            print("Login error: \(error)")
+        }
     }
     
-    func register(email: String, password: String, name: String = "") {
-        authService.register(email: email, password: password, name: name)
+    func register(name: String, email: String, password: String) async {
+        do {
+            let user = try await authService.register(name: name, email: email, password: password)
+            DispatchQueue.main.async {
+                self.currentUser = user
+                self.isAuthenticated = true
+            }
+        } catch {
+            print("Registration error: \(error)")
+        }
     }
     
     func logout() {
         authService.logout()
-    }
-}
-
-@main
-struct ViciMVPApp: App {
-    @StateObject private var userAuth = UserAuthentication()
-    @StateObject private var trainingPlanService = TrainingPlanService()
-    
-    var body: some Scene {
-        WindowGroup {
-            if userAuth.isAuthenticated {
-                MainTabView()
-                    .environmentObject(userAuth)
-                    .environmentObject(trainingPlanService)
-            } else {
-                AuthenticationView()
-                    .environmentObject(userAuth)
-            }
+        DispatchQueue.main.async {
+            self.currentUser = nil
+            self.isAuthenticated = false
         }
     }
 } 

@@ -897,4 +897,101 @@ struct MockBadges {
             dateEarned: Date().addingTimeInterval(-45*24*60*60)
         )
     ]
+}
+
+// Mock data for development and testing
+struct MockData {
+    // Sample user data
+    static let sampleUser = User(
+        id: "user123",
+        email: "user@example.com",
+        name: "John Runner",
+        profilePictureUrl: nil
+    )
+    
+    // Sample workout data
+    static let sampleWorkouts = [
+        Workout(
+            id: "workout1",
+            title: "Easy Run",
+            description: "A light recovery run to build endurance",
+            workoutType: .easy,
+            status: .scheduled,
+            date: Date(),
+            plannedDistance: 5000,
+            estimatedDuration: 1800,
+            intensityLevel: .low,
+            completedActivity: nil
+        ),
+        Workout(
+            id: "workout2",
+            title: "Interval Training",
+            description: "6 x 400m repeats with 200m recovery jogs",
+            workoutType: .interval,
+            status: .scheduled,
+            date: Date().addingTimeInterval(86400),
+            plannedDistance: 7000,
+            estimatedDuration: 2400,
+            intensityLevel: .high,
+            completedActivity: nil
+        )
+    ]
+    
+    // Sample training plan
+    static let sampleTrainingPlan = TrainingPlan(
+        id: "plan123", 
+        name: "5K Beginner Plan",
+        description: "A 5K training plan for beginners",
+        goalType: .race,
+        distance: 5000,
+        duration: 8,
+        difficulty: .beginner,
+        startDate: Date().addingTimeInterval(-7 * 86400),
+        endDate: Date().addingTimeInterval(56 * 86400),
+        currentWeek: 5,
+        totalWeeks: 12,
+        currentWeekWorkouts: sampleWorkouts,
+        currentWeekDistance: 30000,
+        notes: "Focus on building your base mileage this week. The tempo run on Friday is key - really try to dial in that marathon pace feeling.",
+        objective: "Complete a 5K race in under 20 minutes"
+    )
+}
+
+// Basic model definitions
+struct User {
+    let id: String
+    let email: String
+    let name: String?
+    let profilePictureUrl: String?
+}
+
+struct Workout {
+    let id: String
+    let title: String
+    let description: String
+    let workoutType: WorkoutType
+    let status: WorkoutStatus
+    let date: Date
+    let plannedDistance: Double
+    let estimatedDuration: TimeInterval
+    let intensityLevel: IntensityLevel
+    let completedActivity: Activity?
+}
+
+struct TrainingPlan {
+    let id: String
+    let name: String
+    let description: String
+    let goalType: GoalType
+    let distance: Double
+    let duration: Int
+    let difficulty: ExperienceLevel
+    let startDate: Date
+    let endDate: Date
+    let currentWeek: Int
+    let totalWeeks: Int
+    let currentWeekWorkouts: [Workout]
+    let currentWeekDistance: Double
+    let notes: String?
+    let objective: String?
 } 
