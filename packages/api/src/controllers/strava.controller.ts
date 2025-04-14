@@ -3,9 +3,11 @@ import { Request, Response, NextFunction } from 'express';
 
 // Import StravaService
 import { StravaService } from '../services/strava.service'; // Adjust path if needed
+import { UserService } from '../services/user.service'; // Import UserService
 
 // Initialize StravaService (consider dependency injection if using a framework like NestJS)
 const stravaService = new StravaService();
+const userService = new UserService(); // Instantiate UserService
 
 // Define an interface for the expected user object on the request
 // Adjust this based on the actual properties in your JWT payload
@@ -67,21 +69,51 @@ export const handleStravaCallback = async (req: Request, res: Response, next: Ne
             return res.redirect('http://localhost:8081/settings?strava_error=missing_code');
         }
 
-        // Exchange code for tokens using StravaService
-        const tokens = await stravaService.exchangeCodeForTokens(code);
+        try {
+            // Exchange code for tokens using StravaService
+            const tokens = await stravaService.exchangeCodeForTokens(code);
 
-        // Save the connection details
-        await stravaService.saveUserStravaConnection(validatedUserId, tokens);
+            // Save the connection details
+            await stravaService.saveUserStravaConnection(validatedUserId, tokens);
 
-        // --- Trigger asynchronous initial activity sync ---
-        // We don't await this, as it just kicks off the background job
-        stravaService.triggerInitialActivitySync(validatedUserId);
-        // --- End trigger activity sync ---
+            // From this point on, even if subsequent steps fail, we've successfully connected
+            // the account so we want to return success to the user
 
-        // Redirect user to a success page or back to settings
-        // The redirect happens immediately; the sync happens in the background.
-        console.log(`Strava connection successful, tokens saved, and initial sync triggered for user ${validatedUserId}!`);
-        res.redirect('http://localhost:8081/settings?strava_success=true');
+            // Use a try/catch block for profile update so it doesn't fail the whole process
+            try {
+                // Fetch athlete data immediately after connecting
+                // Use the athlete data included in the token exchange response if possible
+                const athleteData = tokens.athlete || await stravaService.fetchStravaAthleteData(validatedUserId);
+
+                if (athleteData) {
+                    console.log(`Processing initial Strava athlete data for user ${validatedUserId}`);
+                    await userService.updateProfileFromStrava(validatedUserId, athleteData);
+                } else {
+                    console.warn(`Could not fetch/find initial Strava athlete data for user ${validatedUserId} after connection.`);
+                }
+            } catch (profileError) {
+                // Log but don't fail the whole process
+                console.error('Error updating profile from Strava data:', profileError);
+            }
+
+            // Also wrap sync in try/catch as it's non-critical
+            try {
+                // Trigger asynchronous initial activity sync
+                stravaService.triggerInitialActivitySync(validatedUserId);
+            } catch (syncError) {
+                // Log but don't fail the whole process
+                console.error('Error triggering initial activity sync:', syncError);
+            }
+
+            // Redirect user to a success page or back to settings
+            console.log(`Strava connection successful for user ${validatedUserId}!`);
+            res.redirect('http://localhost:8081/settings?strava_success=true');
+            
+        } catch (authError) {
+            // If the token exchange or saving connection fails, that's a critical error
+            console.error('Error in Strava authentication process:', authError);
+            return res.redirect('http://localhost:8081/settings?strava_error=callback_failed');
+        }
 
     } catch (error) {
         console.error('Error handling Strava callback:', error);

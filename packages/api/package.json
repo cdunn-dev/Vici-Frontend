@@ -6,14 +6,17 @@
   "types": "dist/index.d.ts",
   "private": true,
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev -r dotenv/config --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
+    "test:integration": "jest --testPathPattern=__tests__/integration",
+    "test:llm": "jest --testPathPattern=__tests__/integration/llm.integration.test.ts",
     "lint": "eslint src/**/*.ts",
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.0",
     "@vici/database": "*",
     "@vici/services": "*",
     "body-parser": "^1.20.2",
@@ -22,7 +25,8 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "helmet": "^7.0.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/compression": "^1.7.2",

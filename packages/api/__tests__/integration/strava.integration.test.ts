@@ -1,41 +1,7 @@
-import request from 'supertest';
-import app from '../../src/index'; // Adjust path to your Express app instance
-import jwt from 'jsonwebtoken';
-
-// Mock the StravaService methods to avoid actual external calls
-// We need to mock BEFORE the service is potentially instantiated in the controller
-const mockGetAuthorizationUrl = jest.fn();
-const mockValidateAuthState = jest.fn();
-const mockExchangeCodeForTokens = jest.fn();
-const mockSaveUserStravaConnection = jest.fn();
-const mockTriggerInitialActivitySync = jest.fn();
-
-jest.mock('../../src/services/strava.service', () => {
-    return {
-        StravaService: jest.fn().mockImplementation(() => {
-            return {
-                getAuthorizationUrl: mockGetAuthorizationUrl,
-                validateAuthState: mockValidateAuthState,
-                exchangeCodeForTokens: mockExchangeCodeForTokens,
-                saveUserStravaConnection: mockSaveUserStravaConnection,
-                triggerInitialActivitySync: mockTriggerInitialActivitySync,
-                // Mock other methods if needed by the controller
-            };
-        }),
-    };
-});
-
-// Mock UserService
-const mockUpdateProfileFromStrava = jest.fn();
-jest.mock('../../src/services/user.service', () => {
-    return {
-        UserService: jest.fn().mockImplementation(() => {
-            return {
-                updateProfileFromStrava: mockUpdateProfileFromStrava
-            };
-        }),
-    };
-});
+const request = require('supertest');
+const app = require('../../src/index').default; // Adjust path to your Express app instance
+const jwt = require('jsonwebtoken');
+const { mocks } = require('../setupJest');
 
 // Test data
 const TEST_USER_ID = 'test-user-123';
@@ -52,7 +18,7 @@ describe('Strava Integration API Endpoints', () => {
 
     describe('GET /api/integrations/strava/connect', () => {
         it('should redirect to Strava auth URL for authenticated users', async () => {
-            mockGetAuthorizationUrl.mockResolvedValue(stravaAuthUrl);
+            mocks.getAuthorizationUrl.mockResolvedValue(stravaAuthUrl);
 
             const response = await request(app)
                 .get('/api/integrations/strava/connect')
@@ -60,7 +26,7 @@ describe('Strava Integration API Endpoints', () => {
 
             expect(response.status).toBe(302); // Expect redirect
             expect(response.headers.location).toBe(stravaAuthUrl);
-            expect(mockGetAuthorizationUrl).toHaveBeenCalledWith(TEST_USER_ID);
+            expect(mocks.getAuthorizationUrl).toHaveBeenCalledWith(TEST_USER_ID);
         });
 
         it('should return 401 if no token is provided', async () => {
@@ -82,7 +48,7 @@ describe('Strava Integration API Endpoints', () => {
         });
 
         it('should handle errors during URL generation', async () => {
-            mockGetAuthorizationUrl.mockRejectedValue(new Error('Service error'));
+            mocks.getAuthorizationUrl.mockRejectedValue(new Error('Service error'));
 
             const response = await request(app)
                 .get('/api/integrations/strava/connect')
@@ -104,22 +70,22 @@ describe('Strava Integration API Endpoints', () => {
         const failedRedirect = 'http://localhost:8081/settings?strava_error=callback_failed';
 
         it('should handle successful callback, save tokens, update profile, trigger sync, and redirect', async () => {
-            mockValidateAuthState.mockResolvedValue(TEST_USER_ID); // Return valid user ID for the state
-            mockExchangeCodeForTokens.mockResolvedValue(testTokens);
-            mockSaveUserStravaConnection.mockResolvedValue({}); // Mock successful save
-            mockUpdateProfileFromStrava.mockResolvedValue({}); // Mock successful profile update
-            mockTriggerInitialActivitySync.mockResolvedValue(undefined);
+            mocks.validateAuthState.mockResolvedValue(TEST_USER_ID); // Return valid user ID for the state
+            mocks.exchangeCodeForTokens.mockResolvedValue(testTokens);
+            mocks.saveUserStravaConnection.mockResolvedValue({}); // Mock successful save
+            mocks.updateProfileFromStrava.mockResolvedValue({}); // Mock successful profile update
+            mocks.triggerInitialActivitySync.mockResolvedValue(undefined);
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?code=${testCode}&state=${testState}&scope=read,activity:read_all`);
 
             expect(response.status).toBe(302); // Expect redirect
             expect(response.headers.location).toBe(successRedirect);
-            expect(mockValidateAuthState).toHaveBeenCalledWith(testState);
-            expect(mockExchangeCodeForTokens).toHaveBeenCalledWith(testCode);
-            expect(mockSaveUserStravaConnection).toHaveBeenCalledWith(TEST_USER_ID, testTokens);
-            expect(mockUpdateProfileFromStrava).toHaveBeenCalledWith(TEST_USER_ID, testTokens.athlete);
-            expect(mockTriggerInitialActivitySync).toHaveBeenCalledWith(TEST_USER_ID);
+            expect(mocks.validateAuthState).toHaveBeenCalledWith(testState);
+            expect(mocks.exchangeCodeForTokens).toHaveBeenCalledWith(testCode);
+            expect(mocks.saveUserStravaConnection).toHaveBeenCalledWith(TEST_USER_ID, testTokens);
+            expect(mocks.updateProfileFromStrava).toHaveBeenCalledWith(TEST_USER_ID, testTokens.athlete);
+            expect(mocks.triggerInitialActivitySync).toHaveBeenCalledWith(TEST_USER_ID);
         });
         
         it('should redirect with error if user denies access', async () => {
@@ -128,49 +94,49 @@ describe('Strava Integration API Endpoints', () => {
 
             expect(response.status).toBe(302);
             expect(response.headers.location).toBe(deniedRedirect);
-            expect(mockValidateAuthState).not.toHaveBeenCalled();
+            expect(mocks.validateAuthState).not.toHaveBeenCalled();
         });
 
         it('should redirect with error if state is invalid or expired', async () => {
-            mockValidateAuthState.mockResolvedValue(null); // Simulate invalid state
+            mocks.validateAuthState.mockResolvedValue(null); // Simulate invalid state
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?code=${testCode}&state=invalidOrExpiredState&scope=read`);
 
             expect(response.status).toBe(302);
             expect(response.headers.location).toBe(invalidStateRedirect);
-            expect(mockValidateAuthState).toHaveBeenCalledWith('invalidOrExpiredState');
-            expect(mockExchangeCodeForTokens).not.toHaveBeenCalled();
+            expect(mocks.validateAuthState).toHaveBeenCalledWith('invalidOrExpiredState');
+            expect(mocks.exchangeCodeForTokens).not.toHaveBeenCalled();
         });
 
         it('should redirect with error if code is missing', async () => {
-            mockValidateAuthState.mockResolvedValue(TEST_USER_ID); // State is valid
+            mocks.validateAuthState.mockResolvedValue(TEST_USER_ID); // State is valid
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?state=${testState}&scope=read`); // No code
 
             expect(response.status).toBe(302);
             expect(response.headers.location).toBe(missingCodeRedirect);
-            expect(mockValidateAuthState).toHaveBeenCalledWith(testState);
-            expect(mockExchangeCodeForTokens).not.toHaveBeenCalled();
+            expect(mocks.validateAuthState).toHaveBeenCalledWith(testState);
+            expect(mocks.exchangeCodeForTokens).not.toHaveBeenCalled();
         });
 
         it('should redirect with error if token exchange fails', async () => {
-            mockValidateAuthState.mockResolvedValue(TEST_USER_ID);
-            mockExchangeCodeForTokens.mockRejectedValue(new Error('Strava API Error'));
+            mocks.validateAuthState.mockResolvedValue(TEST_USER_ID);
+            mocks.exchangeCodeForTokens.mockRejectedValue(new Error('Strava API Error'));
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?code=${testCode}&state=${testState}&scope=read`);
 
             expect(response.status).toBe(302);
             expect(response.headers.location).toBe(failedRedirect);
-            expect(mockSaveUserStravaConnection).not.toHaveBeenCalled();
+            expect(mocks.saveUserStravaConnection).not.toHaveBeenCalled();
         });
 
         it('should redirect with error if saving connection fails', async () => {
-             mockValidateAuthState.mockResolvedValue(TEST_USER_ID);
-            mockExchangeCodeForTokens.mockResolvedValue(testTokens);
-            mockSaveUserStravaConnection.mockRejectedValue(new Error('DB Error'));
+             mocks.validateAuthState.mockResolvedValue(TEST_USER_ID);
+            mocks.exchangeCodeForTokens.mockResolvedValue(testTokens);
+            mocks.saveUserStravaConnection.mockRejectedValue(new Error('DB Error'));
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?code=${testCode}&state=${testState}&scope=read`);
@@ -180,35 +146,243 @@ describe('Strava Integration API Endpoints', () => {
         });
 
          it('should still succeed redirect even if initial profile update fails', async () => {
-            mockValidateAuthState.mockResolvedValue(TEST_USER_ID); 
-            mockExchangeCodeForTokens.mockResolvedValue(testTokens);
-            mockSaveUserStravaConnection.mockResolvedValue({}); 
-            mockUpdateProfileFromStrava.mockRejectedValue(new Error('Profile update failed')); // Simulate profile update failure
-            mockTriggerInitialActivitySync.mockResolvedValue(undefined);
+            mocks.validateAuthState.mockResolvedValue(TEST_USER_ID); 
+            mocks.exchangeCodeForTokens.mockResolvedValue(testTokens);
+            mocks.saveUserStravaConnection.mockResolvedValue({}); 
+            mocks.updateProfileFromStrava.mockRejectedValue(new Error('Profile update failed')); // Simulate profile update failure
+            mocks.triggerInitialActivitySync.mockResolvedValue(undefined);
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?code=${testCode}&state=${testState}&scope=read,activity:read_all`);
 
             expect(response.status).toBe(302); // Still expect redirect
             expect(response.headers.location).toBe(successRedirect);
-            expect(mockSaveUserStravaConnection).toHaveBeenCalled();
-            expect(mockUpdateProfileFromStrava).toHaveBeenCalled(); // It was called
-            expect(mockTriggerInitialActivitySync).toHaveBeenCalled(); // Sync should still be triggered
+            expect(mocks.saveUserStravaConnection).toHaveBeenCalled();
+            expect(mocks.updateProfileFromStrava).toHaveBeenCalled(); // It was called
+            expect(mocks.triggerInitialActivitySync).toHaveBeenCalled(); // Sync should still be triggered
         });
 
         it('should still succeed redirect even if triggering sync fails (fire and forget)', async () => {
-            mockValidateAuthState.mockResolvedValue(TEST_USER_ID); 
-            mockExchangeCodeForTokens.mockResolvedValue(testTokens);
-            mockSaveUserStravaConnection.mockResolvedValue({}); 
-            mockUpdateProfileFromStrava.mockResolvedValue({});
-            mockTriggerInitialActivitySync.mockImplementation(() => { throw new Error('Trigger failed') }); // Simulate failure in trigger
+            mocks.validateAuthState.mockResolvedValue(TEST_USER_ID); 
+            mocks.exchangeCodeForTokens.mockResolvedValue(testTokens);
+            mocks.saveUserStravaConnection.mockResolvedValue({}); 
+            mocks.updateProfileFromStrava.mockResolvedValue({});
+            mocks.triggerInitialActivitySync.mockImplementation(() => { throw new Error('Trigger failed') }); // Simulate failure in trigger
 
             const response = await request(app)
                 .get(`/api/integrations/strava/callback?code=${testCode}&state=${testState}&scope=read,activity:read_all`);
 
             expect(response.status).toBe(302); // Still expect redirect
             expect(response.headers.location).toBe(successRedirect);
-            expect(mockTriggerInitialActivitySync).toHaveBeenCalled(); // It was called
+            expect(mocks.triggerInitialActivitySync).toHaveBeenCalled(); // It was called
+        });
+    });
+
+    // Add new test section for Strava webhooks
+    describe('Strava Webhook Endpoints', () => {
+        const VALID_VERIFY_TOKEN = process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || 'default-verify-token';
+        const CHALLENGE = 'some-challenge-string';
+        
+        describe('GET /api/webhooks/strava (Subscription Verification)', () => {
+            it('should respond with the challenge when verify_token is valid', async () => {
+                const response = await request(app)
+                    .get('/api/webhooks/strava')
+                    .query({
+                        'hub.mode': 'subscribe',
+                        'hub.verify_token': VALID_VERIFY_TOKEN,
+                        'hub.challenge': CHALLENGE
+                    });
+                
+                expect(response.status).toBe(200);
+                expect(response.body).toEqual({ "hub.challenge": CHALLENGE });
+            });
+            
+            it('should respond with 403 when verify_token is invalid', async () => {
+                const response = await request(app)
+                    .get('/api/webhooks/strava')
+                    .query({
+                        'hub.mode': 'subscribe',
+                        'hub.verify_token': 'invalid-token',
+                        'hub.challenge': CHALLENGE
+                    });
+                
+                expect(response.status).toBe(403);
+            });
+            
+            it('should respond with 403 when mode is not subscribe', async () => {
+                const response = await request(app)
+                    .get('/api/webhooks/strava')
+                    .query({
+                        'hub.mode': 'something-else',
+                        'hub.verify_token': VALID_VERIFY_TOKEN,
+                        'hub.challenge': CHALLENGE
+                    });
+                
+                expect(response.status).toBe(403);
+            });
+        });
+        
+        describe('POST /api/webhooks/strava (Event Handling)', () => {
+            const STRAVA_ATHLETE_ID = 12345;
+            const STRAVA_ACTIVITY_ID = 67890;
+            const VICI_USER_ID = 'vici-user-123';
+            
+            beforeEach(() => {
+                // Set up common mock behavior
+                mocks.findViciUserIdByStravaId.mockResolvedValue(VICI_USER_ID);
+            });
+            
+            it('should process activity created event', async () => {
+                const eventPayload = {
+                    object_type: 'activity',
+                    object_id: STRAVA_ACTIVITY_ID,
+                    aspect_type: 'create',
+                    owner_id: STRAVA_ATHLETE_ID,
+                    updates: {},
+                    event_time: Date.now()
+                };
+                
+                const response = await request(app)
+                    .post('/api/webhooks/strava')
+                    .send(eventPayload)
+                    .set('Content-Type', 'application/json');
+                
+                expect(response.status).toBe(200);
+                expect(response.text).toBe('EVENT_RECEIVED');
+                
+                // Wait for asynchronous processing
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                expect(mocks.findViciUserIdByStravaId).toHaveBeenCalledWith(STRAVA_ATHLETE_ID);
+                expect(mocks.fetchAndStoreSingleActivity).toHaveBeenCalledWith(VICI_USER_ID, STRAVA_ACTIVITY_ID);
+                expect(mocks.deleteActivity).not.toHaveBeenCalled();
+            });
+            
+            it('should process activity updated event', async () => {
+                const eventPayload = {
+                    object_type: 'activity',
+                    object_id: STRAVA_ACTIVITY_ID,
+                    aspect_type: 'update',
+                    owner_id: STRAVA_ATHLETE_ID,
+                    updates: { title: 'Updated Title' },
+                    event_time: Date.now()
+                };
+                
+                const response = await request(app)
+                    .post('/api/webhooks/strava')
+                    .send(eventPayload)
+                    .set('Content-Type', 'application/json');
+                
+                expect(response.status).toBe(200);
+                
+                // Wait for asynchronous processing
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                expect(mocks.findViciUserIdByStravaId).toHaveBeenCalledWith(STRAVA_ATHLETE_ID);
+                expect(mocks.fetchAndStoreSingleActivity).toHaveBeenCalledWith(VICI_USER_ID, STRAVA_ACTIVITY_ID);
+                expect(mocks.deleteActivity).not.toHaveBeenCalled();
+            });
+            
+            it('should process activity deleted event', async () => {
+                const eventPayload = {
+                    object_type: 'activity',
+                    object_id: STRAVA_ACTIVITY_ID,
+                    aspect_type: 'delete',
+                    owner_id: STRAVA_ATHLETE_ID,
+                    updates: {},
+                    event_time: Date.now()
+                };
+                
+                const response = await request(app)
+                    .post('/api/webhooks/strava')
+                    .send(eventPayload)
+                    .set('Content-Type', 'application/json');
+                
+                expect(response.status).toBe(200);
+                
+                // Wait for asynchronous processing
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                expect(mocks.findViciUserIdByStravaId).toHaveBeenCalledWith(STRAVA_ATHLETE_ID);
+                expect(mocks.deleteActivity).toHaveBeenCalledWith(VICI_USER_ID, STRAVA_ACTIVITY_ID);
+                expect(mocks.fetchAndStoreSingleActivity).not.toHaveBeenCalled();
+            });
+            
+            it('should process athlete deauthorization event', async () => {
+                const eventPayload = {
+                    object_type: 'athlete',
+                    object_id: STRAVA_ATHLETE_ID,
+                    aspect_type: 'update',
+                    owner_id: STRAVA_ATHLETE_ID,
+                    updates: { authorized: false },
+                    event_time: Date.now()
+                };
+                
+                const response = await request(app)
+                    .post('/api/webhooks/strava')
+                    .send(eventPayload)
+                    .set('Content-Type', 'application/json');
+                
+                expect(response.status).toBe(200);
+                
+                // Wait for asynchronous processing
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                expect(mocks.handleDeauthorization).toHaveBeenCalledWith(STRAVA_ATHLETE_ID);
+                expect(mocks.findViciUserIdByStravaId).not.toHaveBeenCalled();
+            });
+            
+            it('should handle unknown Vici user gracefully', async () => {
+                mocks.findViciUserIdByStravaId.mockResolvedValue(null); // No Vici user found
+                
+                const eventPayload = {
+                    object_type: 'activity',
+                    object_id: STRAVA_ACTIVITY_ID,
+                    aspect_type: 'create',
+                    owner_id: STRAVA_ATHLETE_ID,
+                    updates: {},
+                    event_time: Date.now()
+                };
+                
+                const response = await request(app)
+                    .post('/api/webhooks/strava')
+                    .send(eventPayload)
+                    .set('Content-Type', 'application/json');
+                
+                expect(response.status).toBe(200);
+                
+                // Wait for asynchronous processing
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                expect(mocks.findViciUserIdByStravaId).toHaveBeenCalledWith(STRAVA_ATHLETE_ID);
+                expect(mocks.fetchAndStoreSingleActivity).not.toHaveBeenCalled();
+                expect(mocks.deleteActivity).not.toHaveBeenCalled();
+            });
+            
+            it('should handle unknown event types gracefully', async () => {
+                const eventPayload = {
+                    object_type: 'unknown_type',
+                    object_id: STRAVA_ACTIVITY_ID,
+                    aspect_type: 'create',
+                    owner_id: STRAVA_ATHLETE_ID,
+                    updates: {},
+                    event_time: Date.now()
+                };
+                
+                const response = await request(app)
+                    .post('/api/webhooks/strava')
+                    .send(eventPayload)
+                    .set('Content-Type', 'application/json');
+                
+                expect(response.status).toBe(200);
+                
+                // Wait for asynchronous processing
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                expect(mocks.findViciUserIdByStravaId).not.toHaveBeenCalled();
+                expect(mocks.fetchAndStoreSingleActivity).not.toHaveBeenCalled();
+                expect(mocks.deleteActivity).not.toHaveBeenCalled();
+            });
         });
     });
 }); 

@@ -23,6 +23,86 @@ if (API_KEY) {
     console.error("LLM Service could not initialize due to missing API key.");
 }
 
+// --- Define interfaces for input/output structures ---
+
+// For training plan generation input
+interface TrainingPlanRequestData {
+    profile: {
+        experienceLevel?: string;
+        fitnessLevel?: string;
+        personalBests?: Array<{
+            distanceMeters: number;
+            timeSeconds: number;
+            dateAchieved?: string;
+        }>;
+    };
+    goal: {
+        type: 'Race' | 'NonRace';
+        distanceMeters?: number;
+        raceDate?: string;
+        goalTimeSeconds?: number;
+        previousPbSeconds?: number;
+        objective?: string;
+    };
+    preferences: {
+        runningDaysPerWeek?: number;
+        preferredLongRunDay?: string;
+        targetWeeklyDistanceMeters?: number;
+        qualityWorkoutsPerWeek?: number;
+        coachingStyle?: string;
+    };
+    historicalWeeklySummaries?: Array<{
+        startDate: string;
+        totalDistanceMeters: number;
+        numberOfRuns: number;
+    }>;
+    recentKeyWorkouts?: Array<{
+        date: string;
+        type: string;
+        distanceMeters: number;
+        movingTimeSeconds: number;
+        averagePaceSecondsPerKm: number | null;
+    }>;
+}
+
+// For Ask Vici input
+interface AskViciRequestData {
+    query: string;
+    context: {
+        plan: {
+            id: string;
+            status: string;
+            goal: any; // Could be more specific based on your schema
+            currentWeekData?: {
+                weekNumber: number;
+                startDate: string;
+                endDate: string;
+                phase: string | null;
+                workouts: Array<{
+                    date: string;
+                    workoutType: string;
+                    description: string | null;
+                    distanceMeters: number | null;
+                    durationSeconds: number | null;
+                    status: string;
+                }>;
+            };
+        };
+        profile: {
+            experienceLevel?: string;
+            fitnessLevel?: string;
+        };
+    };
+}
+
+// For Ask Vici response
+interface AskViciResponse {
+    answerText: string;
+    proposedChanges: any | null; // Could be more specific if you define a standard structure
+    hasStructuredChanges: boolean;
+    timestamp: string;
+}
+
 // --- Zod Schema Definition for LLM Training Plan Output --- 
 const paceTargetSchema = z.object({
     minSecondsPerKm: z.number().positive().nullable(),
@@ -83,174 +163,224 @@ export class LLMService {
 
     /**
      * Generates a training plan based on user profile, goals, and history.
-     * TODO: Define input structure and implement prompt engineering.
-     * @param {object} planRequestData - Data containing user profile, goal, preferences, history.
-     * @returns {Promise<any>} The generated training plan structure (e.g., JSON).
+     * @param {TrainingPlanRequestData} planRequestData - Structured data containing user profile, goal, preferences, history.
+     * @returns {Promise<z.infer<typeof llmPlanResponseSchema>>} The generated training plan structure.
      */
-    async generateTrainingPlan(planRequestData: any): Promise<any> {
+    async generateTrainingPlan(planRequestData: TrainingPlanRequestData): Promise<z.infer<typeof llmPlanResponseSchema>> {
         if (!this.model) {
             throw new Error("LLM Service not initialized. Check API Key.");
         }
 
         console.log("Generating training plan with LLM...", planRequestData); // Log input for debugging
 
-        // --- TODO: Prompt Engineering --- 
         const prompt = this.buildTrainingPlanPrompt(planRequestData);
-        // --- End Prompt Engineering ---
+        
+        const MAX_RETRIES = 2;
+        let retries = 0;
+        let lastError;
 
-        try {
-            // Example call - adjust generationConfig and safetySettings as needed
-            const result = await this.model.generateContent(prompt);
-            const response = result.response;
-            const text = response.text();
-            console.log("LLM Response Text:", text); // Log raw response
+        while (retries <= MAX_RETRIES) {
+            try {
+                const result = await this.model.generateContent(prompt);
+                const response = result.response;
+                const text = response.text();
+                console.log("LLM Response Text:", text); // Log raw response
 
-            // --- TODO: Response Parsing --- 
-            // Parse the text response (expecting JSON or structured format)
-            const planJson = this.parsePlanFromResponse(text);
-            // --- End Response Parsing ---
-
-            return planJson;
-
-        } catch (error) {
-            console.error("Error generating training plan from LLM:", error);
-            throw new Error("Failed to generate training plan using LLM.");
+                // Parse the text response
+                const planJson = this.parsePlanFromResponse(text);
+                return planJson;
+            } catch (error) {
+                lastError = error;
+                console.warn(`Error in training plan LLM call (attempt ${retries+1}/${MAX_RETRIES+1}):`, error);
+                
+                // Only retry on network/timeout errors, not on format or prompt errors
+                if (error.message?.includes('network') || error.message?.includes('timeout')) {
+                    retries++;
+                    if (retries <= MAX_RETRIES) {
+                        const backoffMs = Math.pow(2, retries) * 1000;
+                        console.log(`Retrying in ${backoffMs}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, backoffMs));
+                        continue;
+                    }
+                } else {
+                    // Don't retry on other errors
+                    break;
+                }
+            }
         }
+        
+        console.error("Error generating training plan from LLM after retries:", lastError);
+        throw new Error("Failed to generate training plan using LLM.");
     }
 
     /**
      * Handles "Ask Vici" requests for plan adjustments or Q&A.
-     * TODO: Define input structure and implement prompt engineering.
-     * @param {object} askRequestData - Data containing user query, current plan context, profile.
-     * @returns {Promise<any>} The response (text or structured adjustment proposal).
+     * @param {AskViciRequestData} askRequestData - Data containing user query, current plan context, profile.
+     * @returns {Promise<AskViciResponse>} The response with text and potentially structured adjustment proposal.
      */
-    async handleAskVici(askRequestData: any): Promise<any> {
+    async handleAskVici(askRequestData: AskViciRequestData): Promise<AskViciResponse> {
         if (!this.model) {
-            throw new Error("LLM Service not initialized. Check API Key.");
+            throw new Error("LLM Service not initialized. Check API key.");
         }
         
         console.log("Handling Ask Vici request with LLM...", askRequestData);
 
         const prompt = this.buildAskViciPrompt(askRequestData);
         
-         try {
-            const result = await this.model.generateContent(prompt);
-            const response = result.response;
-            const text = response.text();
-            console.log("Ask Vici LLM Response Text:", text);
-            
-            // For MVP, just return the text response. Parsing structured adjustments is complex.
-            const askViciResponse = this.parseAskViciResponse(text);
-            return askViciResponse;
+        const MAX_RETRIES = 2;
+        let retries = 0;
+        let lastError;
 
-        } catch (error) {
-            console.error("Error handling Ask Vici request from LLM:", error);
-            throw new Error("Failed to handle Ask Vici request using LLM.");
+        while (retries <= MAX_RETRIES) {
+            try {
+                const result = await this.model.generateContent(prompt);
+                const response = result.response;
+                const text = response.text();
+                console.log("Ask Vici LLM Response Text:", text);
+                
+                // Parse response using our improved parser
+                const askViciResponse = this.parseAskViciResponse(text);
+                return askViciResponse;
+            } catch (error) {
+                lastError = error;
+                console.warn(`Error in Ask Vici LLM call (attempt ${retries+1}/${MAX_RETRIES+1}):`, error);
+                
+                // Only retry on network/timeout errors, not on format or prompt errors
+                if (error.message?.includes('network') || error.message?.includes('timeout')) {
+                    retries++;
+                    if (retries <= MAX_RETRIES) {
+                        const backoffMs = Math.pow(2, retries) * 1000;
+                        console.log(`Retrying in ${backoffMs}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, backoffMs));
+                        continue;
+                    }
+                } else {
+                    // Don't retry on other errors
+                    break;
+                }
+            }
         }
+        
+        console.error("Error handling Ask Vici request from LLM after retries:", lastError);
+        throw new Error("Failed to handle Ask Vici request using LLM.");
     }
 
     // --- Private Helper Methods for Prompt Building & Parsing --- 
 
-    private buildTrainingPlanPrompt(data: any): string {
+    private buildTrainingPlanPrompt(data: TrainingPlanRequestData): string {
         const { profile, goal, preferences, historicalWeeklySummaries, recentKeyWorkouts } = data;
         
-        let prompt = `You are an expert running coach named Vici, tasked with creating a personalized training plan.`;\
-        prompt += `\nGenerate a structured training plan based on the following user details and requirements.`;\
+        // Build prompt piece by piece
+        let prompt = `You are an expert running coach named Vici, tasked with creating a personalized training plan.`;
+        prompt += `\nGenerate a structured training plan based on the following user details and requirements.`;
         
         // User Profile Section
-        prompt += `\n\n## User Profile:\n`;\
-        prompt += `- Experience Level: ${profile?.experienceLevel || 'Not specified'}\\n`;\
-        prompt += `- Current Fitness Level Indicator: ${profile?.fitnessLevel || 'Not specified'}\\n`; \
-        if (profile?.personalBests && Array.isArray(profile.personalBests) && profile.personalBests.length > 0) {\
-            prompt += `- Personal Bests:\\n`;\
-            profile.personalBests.forEach((pb: any) => {\
-                // Format PB nicely, converting meters/seconds if needed
+        prompt += `\n\n## User Profile:\n`;
+        prompt += `- Experience Level: ${profile?.experienceLevel || 'Not specified'}\n`;
+        prompt += `- Current Fitness Level Indicator: ${profile?.fitnessLevel || 'Not specified'}\n`;
+        if (profile?.personalBests && Array.isArray(profile.personalBests) && profile.personalBests.length > 0) {
+            prompt += `- Personal Bests:\n`;
+            profile.personalBests.forEach((pb: any) => {
                 const distanceKm = pb.distanceMeters ? (pb.distanceMeters / 1000).toFixed(1) + "km" : "Unknown distance";
                 const timeMin = pb.timeSeconds ? Math.floor(pb.timeSeconds / 60) : null;
                 const timeSec = pb.timeSeconds ? (pb.timeSeconds % 60).toString().padStart(2, '0') : null;
                 const timeFormatted = timeMin !== null && timeSec !== null ? `${timeMin}:${timeSec}` : "N/A";
-                prompt += `  - ${distanceKm}: ${timeFormatted} (Achieved: ${pb.dateAchieved || 'N/A'})\\n`;\
-            });\
-        } else {\n           // prompt += `- Personal Bests: None provided or N/A\\n`; \n        }\
+                prompt += `  - ${distanceKm}: ${timeFormatted} (Achieved: ${pb.dateAchieved || 'N/A'})\n`;
+            });
+        }
         
         // Goal Section
-        prompt += `\\n## Training Goal:\\n`;\
-        if (goal?.type === 'Race') {\
-            prompt += `- Type: Race\\n`;\
-            prompt += `- Race Distance (meters): ${goal.distanceMeters || 'Not specified'}\\n`;\
-            prompt += `- Race Date: ${goal.raceDate || 'Not specified'}\\n`;\
-            prompt += `- Goal Time (seconds): ${goal.goalTimeSeconds || 'Not specified'}\\n`;\
-            prompt += `- Previous PB (seconds): ${goal.previousPbSeconds || 'None provided'}\\n`;\
-        } else {\
-            prompt += `- Type: Non-Race\\n`;\
-            prompt += `- Objective: ${goal.objective || 'General Fitness'}\\n`;\
-        }\
+        prompt += `\n\n## Training Goal:\n`;
+        if (goal?.type === 'Race') {
+            prompt += `- Type: Race\n`;
+            prompt += `- Race Distance (meters): ${goal.distanceMeters || 'Not specified'}\n`;
+            prompt += `- Race Date: ${goal.raceDate || 'Not specified'}\n`;
+            prompt += `- Goal Time (seconds): ${goal.goalTimeSeconds || 'Not specified'}\n`;
+            prompt += `- Previous PB (seconds): ${goal.previousPbSeconds || 'None provided'}\n`;
+        } else {
+            prompt += `- Type: Non-Race\n`;
+            prompt += `- Objective: ${goal.objective || 'General Fitness'}\n`;
+        }
         
         // Preferences Section
-        prompt += `\\n## User Preferences:\\n`;\
-        prompt += `- Running Days Per Week: ${preferences?.runningDaysPerWeek || 'Not specified'}\\n`;\
-        prompt += `- Preferred Long Run Day: ${preferences?.preferredLongRunDay || 'Not specified'}\\n`;\
-        prompt += `- Target Weekly Distance (meters): ${preferences?.targetWeeklyDistanceMeters || 'Flexible'}\\n`;\
-        prompt += `- Quality Workouts Per Week: ${preferences?.qualityWorkoutsPerWeek || 1}\\n`;\
-        prompt += `- Coaching Style Preference: ${preferences?.coachingStyle || 'Balanced'}\\n`;\
-
+        prompt += `\n\n## User Preferences:\n`;
+        prompt += `- Running Days Per Week: ${preferences?.runningDaysPerWeek || 'Not specified'}\n`;
+        prompt += `- Preferred Long Run Day: ${preferences?.preferredLongRunDay || 'Not specified'}\n`;
+        prompt += `- Target Weekly Distance (meters): ${preferences?.targetWeeklyDistanceMeters || 'Flexible'}\n`;
+        prompt += `- Quality Workouts Per Week: ${preferences?.qualityWorkoutsPerWeek || 1}\n`;
+        prompt += `- Coaching Style Preference: ${preferences?.coachingStyle || 'Balanced'}\n`;
+        
         // --- Updated Activity History Section --- 
-        prompt += `\\n## Historical Weekly Summaries (Up to 16 weeks, oldest first):\n`;\
-        if (historicalWeeklySummaries && historicalWeeklySummaries.length > 0) {\
-            historicalWeeklySummaries.forEach((week: any) => { \
-                prompt += `- Week starting ${week.startDate}: ${week.numberOfRuns} runs, ${Math.round(week.totalDistanceMeters/1000)}km total\\n`;\
-            });\
-        } else {\
-            prompt += `- No weekly summary data available.\\n`;\
-        }\
-
-        prompt += `\\n## Key Recent Workouts (Approx. last 6 weeks, newest first):\n`;\
-        if (recentKeyWorkouts && recentKeyWorkouts.length > 0) {\n            recentKeyWorkouts.forEach((act: any) => { \
-            const paceMin = Math.floor(act.averagePaceSecondsPerKm / 60);\
-            const paceSec = (act.averagePaceSecondsPerKm % 60).toString().padStart(2, '0');\
-            prompt += `- Date: ${act.date}, Type: ${act.type}, Distance: ${Math.round(act.distanceMeters/1000)}km, Duration: ${Math.round(act.movingTimeSeconds/60)}min, Avg Pace: ${act.averagePaceSecondsPerKm ? `${paceMin}:${paceSec} min/km` : 'N/A'}\\n`;\
-        });\
-    } else {\n            prompt += `- No key recent workouts identified.\\n`;\
-    }\n        // --- End Updated Activity History Section --- \n\n        // Core Instructions & Constraints\n        prompt += `\\n## Plan Generation Requirements:\n`;\n        prompt += `- Determine an appropriate plan duration in weeks based on the goal and user profile.\\n`;\n        prompt += `- Structure the plan into logical phases (e.g., Base, Build, Peak, Taper) if applicable.\\n`;\n        prompt += `- Ensure gradual weekly volume progression (generally <= 10% increase, with occasional down/recovery weeks).\\n`;\n        prompt += `- Schedule workouts across the preferred number of running days, including at least one rest day per week.\\n`;\n        prompt += `- Include a weekly long run, preferably on the user's preferred day.\\n`;\n        prompt += `- Include the specified number of quality workouts (e.g., Tempo, Intervals) appropriate for the goal and user level.\\n`;\n        prompt += `- Define each daily workout clearly with type, target distance OR duration, and intensity guidance (e.g., pace range, perceived effort, heart rate zone - be specific based on user data if possible).\\n`;\n        prompt += `- Provide a concise, descriptive purpose for each workout (e.g., \"Build aerobic capacity\", \"Improve lactate threshold\").\\n`;\n        prompt += `- Prioritize user safety and injury prevention.\\n`;\n
-
+        prompt += `\n\n## Historical Weekly Summaries (Up to 16 weeks, oldest first):\n`;
+        if (historicalWeeklySummaries && historicalWeeklySummaries.length > 0) {
+            historicalWeeklySummaries.forEach((week: any) => { 
+                prompt += `- Week starting ${week.startDate}: ${week.numberOfRuns} runs, ${Math.round(week.totalDistanceMeters/1000)}km total\n`;
+            });
+        } else {
+            prompt += `- No weekly summary data available.\n`;
+        }
+        
+        prompt += `\n\n## Key Recent Workouts (Approx. last 6 weeks, newest first):\n`;
+        if (recentKeyWorkouts && recentKeyWorkouts.length > 0) {
+            recentKeyWorkouts.forEach((act: any) => { 
+                const paceMin = Math.floor(act.averagePaceSecondsPerKm / 60);
+                const paceSec = (act.averagePaceSecondsPerKm % 60).toString().padStart(2, '0');
+                prompt += `- Date: ${act.date}, Type: ${act.type}, Distance: ${Math.round(act.distanceMeters/1000)}km, Duration: ${Math.round(act.movingTimeSeconds/60)}min, Avg Pace: ${act.averagePaceSecondsPerKm ? `${paceMin}:${paceSec} min/km` : 'N/A'}\n`;
+            });
+        } else {
+            prompt += `- No key recent workouts identified.\n`;
+        }
+        // --- End Updated Activity History Section --- 
+        
+        // Core Instructions & Constraints 
+        prompt += `\n\n## Plan Generation Requirements:\n`;
+        prompt += `- Determine an appropriate plan duration in weeks based on the goal and user profile.\n`;
+        prompt += `- Structure the plan into logical phases (e.g., Base, Build, Peak, Taper) if applicable.\n`;
+        prompt += `- Ensure gradual weekly volume progression (generally <= 10% increase, with occasional down/recovery weeks).\n`;
+        prompt += `- Schedule workouts across the preferred number of running days, including at least one rest day per week.\n`;
+        prompt += `- Include a weekly long run, preferably on the user\'s preferred day.\n`;
+        prompt += `- Include the specified number of quality workouts (e.g., Tempo, Intervals) appropriate for the goal and user level.\n`;
+        prompt += `- Define each daily workout clearly with type, target distance OR duration, and intensity guidance (e.g., pace range, perceived effort, heart rate zone - be specific based on user data if possible).\n`;
+        prompt += `- Provide a concise, descriptive purpose for each workout (e.g., \"Build aerobic capacity\", \"Improve lactate threshold\").\n`;
+        prompt += `- Prioritize user safety and injury prevention.\n`;
+        
         // Output Format Constraint
-        prompt += `\\n## Output Format:\n`;\
-        prompt += `Respond ONLY with a valid JSON object. Do NOT include any introductory text, explanations, or markdown formatting like \`\`\`json. The JSON object must represent the training plan and strictly follow this structure:\n`;\
-        prompt += `{\n`;\
-        prompt += `  \"planSummary\": {\n`;\
-        prompt += `    \"durationWeeks\": <number>,\n`;\
-        prompt += `    \"totalDistanceMeters\": <number>,\n`;\
-        prompt += `    \"avgWeeklyDistanceMeters\": <number>\n`;\
-        prompt += `  },\n`;\
-        prompt += `  \"weeks\": [\n`;\
-        prompt += `    {\n`;\
-        prompt += `      \"weekNumber\": <number>,\n`;\
-        prompt += `      \"startDate\": \"YYYY-MM-DD\",\n`;\
-        prompt += `      \"endDate\": \"YYYY-MM-DD\",\n`;\
-        prompt += `      \"phase\": <string | null>,\n`;\
-        prompt += `      \"totalDistanceMeters\": <number>,\n`;\
-        prompt += `      \"dailyWorkouts\": [\n`;\
-        prompt += `        {\n`;\
-        prompt += `          \"date\": \"YYYY-MM-DD\",\n`;\
-        prompt += `          \"dayOfWeek\": \"<e.g., Monday>\",\n`;\
-        prompt += `          \"workoutType\": \"<e.g., EasyRun, Tempo, Intervals, LongRun, Rest>\",\n`;\
-        prompt += `          \"description\": <string>,\n`;\
-        prompt += `          \"purpose\": <string>,\n`;\
-        prompt += `          \"distanceMeters\": <number | null>,\n`;\
-        prompt += `          \"durationSeconds\": <number | null>,\n`;\
-        prompt += `          \"paceTarget\": { \"minSecondsPerKm\": <number | null>, \"maxSecondsPerKm\": <number | null> } | null\n`;\
-        // Add other optional fields like heartRateZoneTarget, perceivedEffortTarget, components if needed
-        prompt += `        }\n`;\
-        prompt += `      ]\n`;\
-        prompt += `    }\n`;\
-        prompt += `  ]\n`;\
-        prompt += `}\n`;\
-
+        prompt += `\n\n## Output Format:\n`;
+        prompt += `Respond ONLY with a valid JSON object. Do NOT include any introductory text, explanations, or markdown formatting like \`\`\`json. The JSON object must represent the training plan and strictly follow this structure:\n`;
+        prompt += `{\n`;
+        prompt += `  \"planSummary\": {\n`;
+        prompt += `    \"durationWeeks\": <number>,\n`;
+        prompt += `    \"totalDistanceMeters\": <number>,\n`;
+        prompt += `    \"avgWeeklyDistanceMeters\": <number>\n`;
+        prompt += `  },\n`;
+        prompt += `  \"weeks\": [\n`;
+        prompt += `    {\n`;
+        prompt += `      \"weekNumber\": <number>,\n`;
+        prompt += `      \"startDate\": \"YYYY-MM-DD\",\n`;
+        prompt += `      \"endDate\": \"YYYY-MM-DD\",\n`;
+        prompt += `      \"phase\": <string | null>,\n`;
+        prompt += `      \"totalDistanceMeters\": <number>,\n`;
+        prompt += `      \"dailyWorkouts\": [\n`;
+        prompt += `        {\n`;
+        prompt += `          \"date\": \"YYYY-MM-DD\",\n`;
+        prompt += `          \"dayOfWeek\": \"<e.g., Monday>\",\n`;
+        prompt += `          \"workoutType\": \"<e.g., EasyRun, Tempo, Intervals, LongRun, Rest>\",\n`;
+        prompt += `          \"description\": <string>,\n`;
+        prompt += `          \"purpose\": <string>,\n`;
+        prompt += `          \"distanceMeters\": <number | null>,\n`;
+        prompt += `          \"durationSeconds\": <number | null>,\n`;
+        prompt += `          \"paceTarget\": { \"minSecondsPerKm\": <number | null>, \"maxSecondsPerKm\": <number | null> } | null\n`;
+        prompt += `        }\n`;
+        prompt += `      ]\n`;
+        prompt += `    }\n`;
+        prompt += `  ]\n`;
+        prompt += `}\n`;
+        
         console.log("Generated LLM Prompt (with PBs):\n", prompt); 
         return prompt;
     }
 
-    private parsePlanFromResponse(responseText: string): any {
+    private parsePlanFromResponse(responseText: string): z.infer<typeof llmPlanResponseSchema> {
         if (!responseText) {
             throw new Error("LLM returned an empty response.");
         }
@@ -289,7 +419,7 @@ export class LLMService {
         }
     }
     
-     private buildAskViciPrompt(data: any): string {
+     private buildAskViciPrompt(data: AskViciRequestData): string {
         const { query, context } = data;
         const { plan, profile } = context;
 
@@ -331,11 +461,41 @@ export class LLMService {
         return prompt;
     }
     
-    private parseAskViciResponse(responseText: string): any {
-        // For MVP, we assume the response is primarily textual.
-        // Future: Could parse for structured adjustment proposals (e.g., JSON diff).
+    private parseAskViciResponse(responseText: string): AskViciResponse {
+        if (!responseText) {
+            throw new Error("LLM returned an empty response.");
+        }
+
+        let cleanedText = responseText.trim();
+        
+        // Try to extract structured adjustments if present
+        // This looks for JSON blocks in the response that contain adjustment proposals
+        const adjustmentRegex = /```(?:json)?\s*({[\s\S]*?})```|({[\s\S]*"adjustments"[\s\S]*})/i;
+        let proposedChanges = null;
+        
+        const match = cleanedText.match(adjustmentRegex);
+        if (match && (match[1] || match[2])) {
+            const jsonStr = (match[1] || match[2]).trim();
+            try {
+                proposedChanges = JSON.parse(jsonStr);
+                // Remove the JSON block from the text so we return clean text
+                cleanedText = cleanedText.replace(adjustmentRegex, '').trim();
+                console.log("Successfully extracted structured adjustment proposal from LLM response");
+            } catch (e) {
+                console.warn("Found potential adjustment JSON in response, but failed to parse:", e);
+                // We continue with the text response since we couldn't parse the JSON
+            }
+        }
+
+        // Handle special cases or clean up text if needed
+        // For example, remove any markdown formatting or standardize terminology
+        
+        // Build the final response object
         return { 
-            answerText: responseText.trim() // Return the cleaned text response
+            answerText: cleanedText,
+            proposedChanges: proposedChanges, // Will be null if no structured changes detected
+            hasStructuredChanges: !!proposedChanges,
+            timestamp: new Date().toISOString()
         }; 
     }
 } 

@@ -8,12 +8,76 @@ const prisma = new PrismaClient();
 const llmService = new LLMService();
 const userService = new UserService();
 
-// Define input structure for plan creation request (adjust as needed based on API input)
+// Get the LLM plan response schema type to reuse
+// Define the schema here since we can't import it from LLMService directly
+const paceTargetSchema = z.object({
+    minSecondsPerKm: z.number().positive().nullable(),
+    maxSecondsPerKm: z.number().positive().nullable(),
+}).nullable();
+
+const dailyWorkoutSchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD format
+    dayOfWeek: z.string(), 
+    workoutType: z.string(), 
+    description: z.string(),
+    purpose: z.string(),
+    distanceMeters: z.number().positive().int().nullable(),
+    durationSeconds: z.number().positive().int().nullable(),
+    paceTarget: paceTargetSchema,
+});
+
+const planWeekSchema = z.object({
+    weekNumber: z.number().positive().int(),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    phase: z.string().nullable(),
+    totalDistanceMeters: z.number().int(),
+    dailyWorkouts: z.array(dailyWorkoutSchema).min(1), 
+});
+
+const planSummarySchema = z.object({
+    durationWeeks: z.number().positive().int(),
+    totalDistanceMeters: z.number().int(),
+    avgWeeklyDistanceMeters: z.number().int(),
+});
+
+const llmPlanResponseSchema = z.object({
+    planSummary: planSummarySchema,
+    weeks: z.array(planWeekSchema).min(1),
+});
+
+// Import the interfaces from LLM service, or redefine them here
+// For simplicity, we'll redefine the core parts we need
+interface Goal {
+    type: 'Race' | 'NonRace';
+    raceName?: string;
+    distanceMeters?: number;
+    raceDate?: string;
+    goalTimeSeconds?: number;
+    previousPbSeconds?: number;
+    objective?: string;
+}
+
+interface PlanPreferences {
+    runningDaysPerWeek: number;
+    preferredLongRunDay?: string;
+    targetWeeklyDistanceMeters?: number;
+    qualityWorkoutsPerWeek: number;
+    coachingStyle?: string;
+}
+
+// Define input structure for plan creation request
 interface CreatePlanInput {
     userId: string;
-    goal: any; // Define Goal structure (e.g., type, distance, time, objective)
-    preferences: any; // Define Preferences structure (e.g., days/week, long run day)
-    // Potentially other inputs like start date?
+    goal: Goal;
+    preferences: PlanPreferences;
+}
+
+// For the Ask Vici functionality
+interface AskViciInput {
+    userId: string;
+    planId: string;
+    query: string;
 }
 
 export class TrainingService {
@@ -133,25 +197,34 @@ export class TrainingService {
 
         // --- End Enhanced Activity Summary Logic ---
         
+        // Fix RunnerProfile type issues
+        interface ExtendedRunnerProfile extends RunnerProfile {
+            personalBests?: Array<{
+                distanceMeters: number;
+                timeSeconds: number;
+                dateAchieved?: string;
+            }>;
+        }
+
+        // Create properly typed LLM input data
         const llmInputData = {
             profile: {
                 experienceLevel: userProfile.runnerProfile?.experienceLevel,
                 fitnessLevel: userProfile.runnerProfile?.fitnessLevel, 
-                personalBests: userProfile.runnerProfile?.personalBests
-                    ? JSON.parse(JSON.stringify(userProfile.runnerProfile.personalBests)) // Basic parsing/cloning
-                    : null,
+                personalBests: (userProfile.runnerProfile as ExtendedRunnerProfile)?.personalBests
+                    ? JSON.parse(JSON.stringify((userProfile.runnerProfile as ExtendedRunnerProfile).personalBests)) 
+                    : undefined,
             },
             goal: input.goal, 
             preferences: input.preferences,
-            // Provide both summaries and key runs
-            historicalWeeklySummaries: sortedWeeklySummaries, // Full history summaries
-            recentKeyWorkouts: recentKeyRuns, // Details of recent long/key runs
+            historicalWeeklySummaries: sortedWeeklySummaries,
+            recentKeyWorkouts: recentKeyRuns,
         };
 
         // 2. Call LLMService to generate the plan structure
         console.log(`Calling LLM to generate plan structure for user ${userId}`);
-        // Assume llmPlanResponseSchema ensures the structure
-        const generatedPlanStructure: z.infer<typeof llmPlanResponseSchema> = await llmService.generateTrainingPlan(llmInputData);
+        // Use the llmPlanResponseSchema defined above
+        const generatedPlanStructure = await llmService.generateTrainingPlan(llmInputData);
 
         // --- Removed basic validation here, as Zod validation happens in LLMService ---
         
@@ -177,8 +250,13 @@ export class TrainingService {
                 data: {
                     userId: userId,
                     status: PlanStatus.Preview, // Use Prisma enum
-                    goal: input.goal, 
-                    // preferences: input.preferences, // Consider storing if needed
+                    // Use JSON.stringify to store the goal as a JSONB field in the database
+                    // This assumes the TrainingPlan model has a field called 'goalData' of type JSONB or similar
+                    goalData: input.goal ? JSON.stringify(input.goal) : undefined,
+                    // or store individual fields if your Prisma schema uses them
+                    goalType: input.goal.type,
+                    goalRaceDistance: input.goal.distanceMeters,
+                    goalRaceDate: input.goal.raceDate ? new Date(input.goal.raceDate) : undefined,
                     
                     // --- Nested Prisma Create with Detailed Mapping --- 
                     // PlanSummary: planSummary ? { create: planSummary } : undefined, // Add if model exists
@@ -286,11 +364,11 @@ export class TrainingService {
 
     /**
      * Handles an "Ask Vici" request by gathering context and calling the LLM service.
-     * @param {object} input - Contains userId, planId, and the user's query.
+     * @param {AskViciInput} input - Contains userId, planId, and the user's query.
      * @returns {Promise<any>} The response from the LLM service.
      * @throws {Error} If plan/user not found or LLM fails.
      */
-    async handleAskViciRequest(input: { userId: string; planId: string; query: string }): Promise<any> {
+    async handleAskViciRequest(input: AskViciInput): Promise<any> {
         const { userId, planId, query } = input;
 
         if (!llmService.isAvailable()) {

@@ -9,6 +9,20 @@ class AuthViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
+    // Computed properties for ProfileView
+    var currentUser: UserProfile? {
+        guard let user = user else { return nil }
+        
+        return UserProfile(
+            id: user.id,
+            fullName: user.name ?? "Runner",
+            email: user.email,
+            bio: user.runnerProfile?.primaryGoal,
+            createdAt: user.createdAt ?? Date(),
+            stravaConnected: user.stravaConnection?.connected ?? false
+        )
+    }
+    
     init() {
         // Initialize login state from keychain
         self.isLoggedIn = authService.isLoggedIn()
@@ -123,7 +137,7 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Profile Update
     
-    func updateProfile(name: String? = nil, email: String? = nil, bio: String? = nil) async {
+    func updateProfile(name: String? = nil, email: String? = nil, bio: String? = nil) async throws {
         await MainActor.run {
             isLoading = true
             errorMessage = nil
@@ -140,11 +154,64 @@ class AuthViewModel: ObservableObject {
                 self.errorMessage = "Failed to update profile: \(error.localizedDescription)"
                 self.isLoading = false
             }
+            throw error
         } catch {
             await MainActor.run {
                 self.errorMessage = "Failed to update profile: \(error.localizedDescription)"
                 self.isLoading = false
             }
+            throw error
         }
     }
+    
+    // Dictionary-based API for easier use with forms
+    func updateProfile(profileData: [String: Any]) async throws {
+        let name = profileData["fullName"] as? String
+        let email = profileData["email"] as? String
+        let bio = profileData["bio"] as? String
+        
+        try await updateProfile(name: name, email: email, bio: bio)
+    }
+    
+    // MARK: - Strava Connection
+    
+    func disconnectStrava() async throws {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
+        
+        do {
+            try await authService.disconnectStrava()
+            
+            // Refresh user data to update the UI
+            try await fetchCurrentUser()
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
+        } catch let error as APIError {
+            await MainActor.run {
+                self.errorMessage = "Failed to disconnect Strava: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+            throw error
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to disconnect Strava: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+            throw error
+        }
+    }
+}
+
+// Simplified User Profile struct used by the Profile View
+struct UserProfile {
+    let id: String
+    let fullName: String
+    let email: String
+    let bio: String?
+    let createdAt: Date
+    let stravaConnected: Bool
 } 

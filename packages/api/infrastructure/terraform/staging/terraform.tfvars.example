@@ -1,0 +1,20 @@
+aws_region = "us-east-1"
+
+# Database credentials - replace with secure values
+db_username = "vici_admin"
+db_password = "change_me_to_secure_password"
+
+# Application secrets - replace with secure values
+jwt_secret = "change_me_to_secure_random_string"
+gemini_api_key = "your_google_gemini_api_key"
+
+# Strava integration
+strava_client_id = "your_strava_client_id"
+strava_client_secret = "your_strava_client_secret"
+strava_webhook_verify_token = "change_me_to_secure_random_string"
+
+# Infrastructure configuration
+ecr_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/vici-api"
+acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abcdef12-3456-7890-abcd-ef1234567890"
+route53_zone_id = "Z1234567890ABCDEFGHI"
+sns_alarm_topic_arn = "arn:aws:sns:us-east-1:123456789012:vici-alerts" 
