@@ -3,9 +3,11 @@ import { Request, Response, NextFunction } from 'express';
 
 // Import StravaService
 import { StravaService } from '../services/strava.service'; // Adjust path if needed
+import { UserService } from '../services/user.service'; // Import UserService
 
 // Initialize StravaService (consider dependency injection if using a framework like NestJS)
 const stravaService = new StravaService();
+const userService = new UserService(); // Instantiate UserService
 
 // Define an interface for the expected user object on the request
 // Adjust this based on the actual properties in your JWT payload
@@ -73,14 +75,22 @@ export const handleStravaCallback = async (req: Request, res: Response, next: Ne
         // Save the connection details
         await stravaService.saveUserStravaConnection(validatedUserId, tokens);
 
-        // --- Trigger asynchronous initial activity sync ---
-        // We don't await this, as it just kicks off the background job
+        // Fetch athlete data immediately after connecting
+        // Use the athlete data included in the token exchange response if possible
+        const athleteData = tokens.athlete || await stravaService.fetchStravaAthleteData(validatedUserId);
+
+        if (athleteData) {
+            console.log(`Processing initial Strava athlete data for user ${validatedUserId}`);
+            await userService.updateProfileFromStrava(validatedUserId, athleteData);
+        } else {
+            console.warn(`Could not fetch/find initial Strava athlete data for user ${validatedUserId} after connection.`);
+        }
+
+        // Trigger asynchronous initial activity sync
         stravaService.triggerInitialActivitySync(validatedUserId);
-        // --- End trigger activity sync ---
 
         // Redirect user to a success page or back to settings
-        // The redirect happens immediately; the sync happens in the background.
-        console.log(`Strava connection successful, tokens saved, and initial sync triggered for user ${validatedUserId}!`);
+        console.log(`Strava connection successful, profile updated, and initial sync triggered for user ${validatedUserId}!`);
         res.redirect('http://localhost:8081/settings?strava_success=true');
 
     } catch (error) {

@@ -1,4 +1,4 @@
-import express from 'express';
+import * as express from 'express';
 import { authenticateJwt } from '../middleware/auth';
 import { UserController } from '../controllers/user.controller';
 

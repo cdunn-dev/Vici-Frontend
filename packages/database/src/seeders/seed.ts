@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient, WorkoutStatus, UserSettings, TrainingPlan, Workout, PlanWeek } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -23,24 +23,32 @@ async function main() {
   
   const user1 = await prisma.user.create({
     data: {
-      email: 'user@example.com',
-      password,
-      name: 'Sample User',
-      profilePicture: 'https://randomuser.me/api/portraits/men/1.jpg',
+      email: 'alice@example.com',
+      passwordHash: password,
+      name: 'Alice Wonderland',
+      emailVerified: true,
+      dateOfBirth: new Date('1990-05-15T00:00:00Z'),
+      gender: 'Female',
       settings: {
         create: {
           distanceUnit: 'km',
           language: 'en',
           coachingStyle: 'Balanced',
           privacyDataSharing: true,
+          updatedAt: new Date(),
           notificationPreferences: {
             create: {
               email: true,
               push: true,
               sms: false,
-              inApp: true
-            }
-          }
+              inApp: true,
+            },
+          },
+        },
+      },
+      runnerProfile: {
+        create: {
+          fitnessLevel: 'Intermediate',
         }
       }
     }
@@ -50,24 +58,30 @@ async function main() {
   
   const user2 = await prisma.user.create({
     data: {
-      email: 'coach@example.com',
-      password,
-      name: 'Coach User',
-      profilePicture: 'https://randomuser.me/api/portraits/women/1.jpg',
+      email: 'bob@example.com',
+      passwordHash: password,
+      name: 'Bob The Builder',
+      emailVerified: true,
       settings: {
         create: {
           distanceUnit: 'miles',
           language: 'en',
           coachingStyle: 'Motivational',
           privacyDataSharing: false,
+          updatedAt: new Date(),
           notificationPreferences: {
             create: {
               email: true,
               push: true,
               sms: true,
-              inApp: true
-            }
-          }
+              inApp: true,
+            },
+          },
+        },
+      },
+      runnerProfile: {
+        create: {
+          fitnessLevel: 'Beginner',
         }
       }
     }
@@ -75,119 +89,89 @@ async function main() {
   
   console.log(`Created user: ${user2.email}`);
   
-  // Create training plans
+  // --- Seed Training Plans --- 
+  // Create Goal and Preferences first
+  const goal1Data = { 
+      type: 'Race',
+      distanceMeters: 10000,
+      raceDate: new Date('2024-09-15T00:00:00Z'),
+      goalTimeSeconds: 3000 
+  };
+  const prefs1Data = {
+      targetWeeklyDistanceMeters: 30000,
+      runningDaysPerWeek: 4,
+      qualityWorkoutsPerWeek: 1,
+      preferredLongRunDay: 'Sunday',
+      coachingStyle: 'Balanced'
+  };
+
+  // Create the TrainingPlan, linking the related records
   const plan1 = await prisma.trainingPlan.create({
     data: {
       userId: user1.id,
       status: 'Active',
-      goal: {
-        type: 'Race',
-        distance: 21097, // Half marathon in meters
-        date: new Date(Date.now() + 12 * 7 * 24 * 60 * 60 * 1000), // 12 weeks from now
-        name: 'City Half Marathon',
-        description: 'My first half marathon'
-      },
-      settings: {
-        daysPerWeek: 4,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 12 * 7 * 24 * 60 * 60 * 1000),
-        preferredRunDays: ['Monday', 'Wednesday', 'Friday', 'Sunday'],
-        includeIntervals: true,
-        includeLongRuns: true,
-        includeRecoveryRuns: true,
-        intensity: 'Medium'
-      }
-    }
+      Goal: { create: goal1Data }, // Use nested create for Goal
+      PlanPreferences: { create: prefs1Data } // Use nested create for PlanPreferences
+      // We will create PlanWeeks and Workouts separately below
+    },
+    include: { Goal: true, PlanPreferences: true } // Include to verify
   });
-  
-  console.log(`Created training plan: ${plan1.id}`);
-  
-  // Create workouts
-  // Create a sample workout for today
-  const today = new Date();
-  
-  const workout1 = await prisma.workout.create({
-    data: {
-      trainingPlanId: plan1.id,
-      userId: user1.id,
-      type: 'EASY_RUN',
-      title: 'Easy Recovery Run',
-      description: 'Take it easy and focus on recovery',
-      scheduledDate: today,
-      duration: 1800, // 30 minutes in seconds
-      distance: 5000, // 5km in meters
-      steps: [
-        {
-          type: 'warmup',
-          duration: 300, // 5 minutes
-          description: 'Easy jogging to warm up'
-        },
-        {
-          type: 'main',
-          duration: 1200, // 20 minutes
-          description: 'Easy pace running'
-        },
-        {
-          type: 'cooldown',
-          duration: 300, // 5 minutes
-          description: 'Easy jogging and walking to cool down'
+
+  console.log(`Created training plan ${plan1.id} for ${user1.email}`);
+
+  // --- Seed Workouts (Example for plan1) --- 
+  if (plan1.id) {
+    // Create PlanWeek first
+    const week1 = await prisma.planWeek.create({ 
+        data: {
+            trainingPlanId: plan1.id, // Link to the created plan
+            weekNumber: 1,
+            startDate: new Date('2024-07-01T00:00:00Z'),
+            endDate: new Date('2024-07-07T23:59:59Z'),
+            totalDistanceMeters: 20000 
         }
+    });
+    console.log(`Created week ${week1.weekNumber} for plan ${plan1.id}`);
+
+    // Create Workouts linked to the PlanWeek
+    await prisma.workout.createMany({
+      data: [
+        {
+          planWeekId: week1.id, // Link to the created week
+          userId: user1.id,
+          workoutType: 'EasyRun',
+          description: '3 miles easy',
+          scheduledDate: new Date('2024-07-02T12:00:00Z'),
+          distanceMeters: 4828,
+          status: WorkoutStatus.Upcoming, 
+        },
+        {
+          planWeekId: week1.id, // Link to the created week
+          userId: user1.id,
+          workoutType: 'Intervals',
+          description: '6x400m @ target pace',
+          scheduledDate: new Date('2024-07-04T12:00:00Z'),
+          distanceMeters: 5000, 
+          status: WorkoutStatus.Upcoming, 
+        },
+         {
+          planWeekId: week1.id, // Link to the created week
+          userId: user1.id,
+          workoutType: 'LongRun',
+          description: '6 miles long run',
+          scheduledDate: new Date('2024-07-07T12:00:00Z'),
+          distanceMeters: 9656,
+          status: WorkoutStatus.Completed, 
+          completedDate: new Date('2024-07-07T14:00:00Z'),
+          actualDistance: 9700,
+          actualDuration: 3600 
+        },
       ],
-      status: 'scheduled'
-    }
-  });
-  
-  console.log(`Created workout: ${workout1.id}`);
-  
-  // Create a completed workout from yesterday
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  const workout2 = await prisma.workout.create({
-    data: {
-      trainingPlanId: plan1.id,
-      userId: user1.id,
-      type: 'INTERVAL',
-      title: 'Speed Intervals',
-      description: '400m repeats with recovery',
-      scheduledDate: yesterday,
-      duration: 2400, // 40 minutes in seconds
-      distance: 6000, // 6km in meters
-      steps: [
-        {
-          type: 'warmup',
-          duration: 600, // 10 minutes
-          description: 'Easy jogging to warm up'
-        },
-        {
-          type: 'interval',
-          duration: 90, // 1:30 minutes
-          distance: 400,
-          targetPace: [210, 240], // 3:30-4:00 min/km pace
-          description: '400m hard effort'
-        },
-        {
-          type: 'recovery',
-          duration: 90, // 1:30 minutes
-          description: 'Recovery jog'
-        },
-        // Repeat interval + recovery 6 times
-        {
-          type: 'cooldown',
-          duration: 600, // 10 minutes
-          description: 'Easy jogging and walking to cool down'
-        }
-      ],
-      completedDate: yesterday,
-      actualDuration: 2450, // Actually took a bit longer
-      actualDistance: 6200, // Actually ran a bit farther
-      status: 'completed'
-    }
-  });
-  
-  console.log(`Created workout: ${workout2.id}`);
-  
-  console.log('Database seed completed successfully');
+    });
+    console.log(`Created workouts for week ${week1.weekNumber}`);
+  }
+
+  console.log(`Seeding finished.`);
 }
 
 // Execute the seed

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { AuthService } from '@vici/services/backend';
+import * as jwt from 'jsonwebtoken';
+import { AuthService } from '@vici/services';
 
 /**
  * Authentication middleware to validate JWT tokens

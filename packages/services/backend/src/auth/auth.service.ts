@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { prisma, UserCreateInput } from '@vici/database';
 
 /**
@@ -8,15 +8,27 @@ import { prisma, UserCreateInput } from '@vici/database';
 export class AuthService {
   private readonly JWT_SECRET: string;
   private readonly JWT_REFRESH_SECRET: string;
-  private readonly JWT_EXPIRES_IN: string;
-  private readonly JWT_REFRESH_EXPIRES_IN: string;
+  private readonly JWT_EXPIRES_IN_SECONDS: number;
+  private readonly JWT_REFRESH_EXPIRES_IN_SECONDS: number;
 
   constructor() {
     // Load from environment variables
     this.JWT_SECRET = process.env.JWT_SECRET || 'vici-jwt-secret';
-    this.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'vici-refresh-secret';
-    this.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
-    this.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+    this.JWT_REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || 'vici-refresh-secret';
+    
+    // Parse expiry times (expect strings like "3600" or "604800" in env)
+    this.JWT_EXPIRES_IN_SECONDS = parseInt(process.env.JWT_EXPIRES_IN_SECONDS || '3600', 10); // Default 1 hour (3600s)
+    this.JWT_REFRESH_EXPIRES_IN_SECONDS = parseInt(process.env.JWT_REFRESH_EXPIRES_IN_SECONDS || '604800', 10); // Default 7 days (604800s)
+
+    if (!this.JWT_SECRET || !this.JWT_REFRESH_SECRET) {
+      console.error('FATAL: JWT secrets not configured!');
+    }
+    if (isNaN(this.JWT_EXPIRES_IN_SECONDS) || isNaN(this.JWT_REFRESH_EXPIRES_IN_SECONDS)) {
+       console.error('FATAL: JWT expiry times in env vars must be valid numbers in seconds!'); 
+       // Set safe defaults if parsing failed to avoid NaN issues
+       this.JWT_EXPIRES_IN_SECONDS = 3600;
+       this.JWT_REFRESH_EXPIRES_IN_SECONDS = 604800;
+    }
   }
 
   /**
@@ -43,7 +55,7 @@ export class AuthService {
     const user = await prisma.user.create({
       data: {
         ...data,
-        password: hashedPassword
+        passwordHash: hashedPassword
       }
     });
 
@@ -81,7 +93,7 @@ export class AuthService {
     }
 
     // Validate password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
@@ -183,7 +195,7 @@ export class AuthService {
           id: decoded.id
         },
         data: {
-          password: hashedPassword
+          passwordHash: hashedPassword
         }
       });
 
@@ -211,17 +223,19 @@ export class AuthService {
    */
   private generateTokens(userId: string) {
     // Generate access token
+    const accessTokenOptions: jwt.SignOptions = { expiresIn: this.JWT_EXPIRES_IN_SECONDS };
     const accessToken = jwt.sign(
       { id: userId },
       this.JWT_SECRET,
-      { expiresIn: this.JWT_EXPIRES_IN }
+      accessTokenOptions
     );
 
     // Generate refresh token
+    const refreshTokenOptions: jwt.SignOptions = { expiresIn: this.JWT_REFRESH_EXPIRES_IN_SECONDS };
     const refreshToken = jwt.sign(
       { id: userId },
       this.JWT_REFRESH_SECRET,
-      { expiresIn: this.JWT_REFRESH_EXPIRES_IN }
+      refreshTokenOptions
     );
 
     return { accessToken, refreshToken };
