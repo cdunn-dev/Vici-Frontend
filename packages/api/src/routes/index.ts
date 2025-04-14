@@ -5,6 +5,7 @@ import trainingRoutes from './training.routes';
 import analyticsRoutes from './analytics.routes';
 import stravaRoutes from './strava.routes';
 import jobRoutes from './job.routes';
+import webhookRoutes from './webhook.routes';
 
 const router = express.Router();
 
@@ -27,5 +28,8 @@ router.use('/integrations/strava', stravaRoutes);
 
 // Mount internal job routes
 router.use('/jobs', jobRoutes);
+
+// Mount webhook routes
+router.use('/webhooks', webhookRoutes);
 
 export default router; 

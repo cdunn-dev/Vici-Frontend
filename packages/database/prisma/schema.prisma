@@ -107,6 +107,7 @@ model UserConnection {
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, provider])
+  @@unique([provider, providerUserId])
   @@index([userId])
 }
 

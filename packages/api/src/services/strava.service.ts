@@ -596,7 +596,178 @@ export class StravaService {
         }
     }
 
-    // TODO:
-    // - Fetching activities using stored token
-    // - Deauthorizing
+    /**
+     * Finds the Vici user ID associated with a given Strava athlete ID.
+     * @param {number | string} stravaUserId The Strava athlete ID (owner_id from webhook).
+     * @returns {Promise<string | null>} The Vici user ID or null if not found.
+     */
+    async findViciUserIdByStravaId(stravaUserId: number | string): Promise<string | null> {
+        if (!stravaUserId) return null;
+        
+        try {
+            const connection = await prisma.userConnection.findUnique({
+                where: {
+                    // Need an index on provider + providerUserId for this lookup
+                    // Currently only unique on userId + provider
+                    // For now, filter manually, but consider adding index for performance
+                    provider_providerUserId: { // Assuming you add @@unique([provider, providerUserId]) or similar
+                        provider: 'strava',
+                        providerUserId: stravaUserId.toString(),
+                    }
+                },
+                select: {
+                    userId: true, // Only select the userId
+                },
+            });
+
+            if (connection) {
+                console.log(`Found Vici user ${connection.userId} for Strava ID ${stravaUserId}`);
+                return connection.userId;
+            } else {
+                console.warn(`No Vici user found for Strava ID ${stravaUserId}`);
+                return null;
+            }
+        } catch (error) {
+            console.error(`Error finding Vici user by Strava ID ${stravaUserId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Fetches details for a single activity from Strava API.
+     * @param {string} userId The Vici user ID.
+     * @param {string | number} stravaActivityId The Strava activity ID.
+     * @returns {Promise<any | null>} Strava activity detail object or null.
+     */
+    private async fetchSingleStravaActivity(userId: string, stravaActivityId: string | number): Promise<any | null> {
+        const accessToken = await this.getValidAccessToken(userId);
+        if (!accessToken) {
+            console.error(`Cannot fetch Strava activity ${stravaActivityId} for user ${userId}: No valid access token.`);
+            return null;
+        }
+
+        const activityUrl = `https://www.strava.com/api/v3/activities/${stravaActivityId}`;
+
+        try {
+            console.log(`Fetching details for Strava activity ${stravaActivityId} for user ${userId}`);
+            const response = await fetch(activityUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Error fetching Strava activity ${stravaActivityId} for user ${userId}: ${response.status} ${response.statusText}`, errorText);
+                return null;
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`Network error fetching Strava activity ${stravaActivityId} for user ${userId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Fetches details for a single activity and stores/updates it in the Vici database.
+     * Called in response to webhook create/update events.
+     * @param {string} userId The Vici user ID.
+     * @param {string | number} stravaActivityId The Strava activity ID.
+     */
+    async fetchAndStoreSingleActivity(userId: string, stravaActivityId: string | number): Promise<void> {
+        const activityData = await this.fetchSingleStravaActivity(userId, stravaActivityId);
+        if (!activityData) {
+            console.warn(`Skipping store for activity ${stravaActivityId}: Failed to fetch details.`);
+            return;
+        }
+
+        // Only process Runs
+        if (activityData.type !== 'Run' && activityData.sport_type !== 'Run' && activityData.sport_type !== 'VirtualRun') {
+            console.log(`Skipping non-run activity ${stravaActivityId} type: ${activityData.type || activityData.sport_type}`);
+            return;
+        }
+
+        const activityToUpsert = {
+             id: `strava-${activityData.id}`,
+             userId: userId,
+             source: 'Strava' as const,
+             sourceActivityId: activityData.id.toString(),
+             startTime: new Date(activityData.start_date),
+             name: activityData.name || '',
+             description: activityData.description || null,
+             distanceMeters: Math.round(activityData.distance || 0),
+             movingTimeSeconds: Math.round(activityData.moving_time || 0),
+             elapsedTimeSeconds: Math.round(activityData.elapsed_time || 0),
+             averagePaceSecondsPerKm: activityData.average_speed ? Math.round(1000 / activityData.average_speed) : 0,
+             maxPaceSecondsPerKm: activityData.max_speed ? Math.round(1000 / activityData.max_speed) : null,
+             averageHeartRate: activityData.average_heartrate ? Math.round(activityData.average_heartrate) : null,
+             maxHeartRate: activityData.max_heartrate ? Math.round(activityData.max_heartrate) : null,
+             totalElevationGainMeters: Math.round(activityData.total_elevation_gain || 0),
+             mapPolyline: activityData.map?.summary_polyline || null,
+             hasPhotos: activityData.total_photo_count > 0,
+             updatedAt: new Date(), 
+             // Assume other fields like isReconciled keep their existing values on update if not specified
+        };
+
+        try {
+            await prisma.activity.upsert({
+                where: { id: activityToUpsert.id },
+                update: activityToUpsert,
+                create: activityToUpsert, // Include all necessary fields for create if different from update
+            });
+            console.log(`Successfully upserted single activity ${stravaActivityId} for user ${userId}`);
+        } catch (error) {
+            console.error(`Error upserting single activity ${stravaActivityId} for user ${userId}:`, error);
+            // Consider retry or logging to a dead-letter queue
+        }
+    }
+
+    /**
+     * Deletes a specific activity from the Vici database.
+     * Called in response to webhook delete events.
+     * @param {string} userId The Vici user ID.
+     * @param {string | number} stravaActivityId The Strava activity ID.
+     */
+    async deleteActivity(userId: string, stravaActivityId: string | number): Promise<void> {
+        const viciActivityId = `strava-${stravaActivityId}`;
+        console.log(`Attempting to delete activity ${viciActivityId} for user ${userId}`);
+        try {
+            // Verify the activity belongs to the user before deleting?
+            // Might not be strictly necessary if lookup is correct, but adds safety.
+            await prisma.activity.delete({
+                where: { id: viciActivityId /* , userId: userId */ }, // Ensure deletion is scoped to user if needed
+            });
+            console.log(`Successfully deleted activity ${viciActivityId} for user ${userId}`);
+        } catch (error: any) {
+             // Handle case where activity might already be deleted (Prisma P2025)
+             if (error.code === 'P2025') { 
+                console.warn(`Activity ${viciActivityId} not found for deletion, likely already deleted.`);
+            } else {
+                console.error(`Error deleting activity ${viciActivityId} for user ${userId}:`, error);
+            }
+        }
+    }
+
+    /**
+     * Handles deauthorization events: removes connection details for the user.
+     * @param {string | number} stravaUserId The Strava athlete ID.
+     */
+    async handleDeauthorization(stravaUserId: string | number): Promise<void> {
+        const viciUserId = await this.findViciUserIdByStravaId(stravaUserId);
+        if (!viciUserId) {
+            console.warn(`Received deauthorization for unknown Strava user ${stravaUserId}`);
+            return;
+        }
+        console.log(`Handling deauthorization for Vici user ${viciUserId} (Strava ID ${stravaUserId})`);
+        try {
+            await prisma.userConnection.delete({
+                where: { userId_provider: { userId: viciUserId, provider: 'strava' } },
+            });
+            console.log(`Successfully deleted Strava connection for user ${viciUserId}`);
+        } catch (error: any) {
+            if (error.code === 'P2025') {
+                 console.warn(`Strava connection for user ${viciUserId} not found for deletion, likely already deleted.`);
+            } else {
+                console.error(`Error deleting Strava connection for user ${viciUserId}:`, error);
+            }
+        }
+    }
 } 
