@@ -69,29 +69,51 @@ export const handleStravaCallback = async (req: Request, res: Response, next: Ne
             return res.redirect('http://localhost:8081/settings?strava_error=missing_code');
         }
 
-        // Exchange code for tokens using StravaService
-        const tokens = await stravaService.exchangeCodeForTokens(code);
+        try {
+            // Exchange code for tokens using StravaService
+            const tokens = await stravaService.exchangeCodeForTokens(code);
 
-        // Save the connection details
-        await stravaService.saveUserStravaConnection(validatedUserId, tokens);
+            // Save the connection details
+            await stravaService.saveUserStravaConnection(validatedUserId, tokens);
 
-        // Fetch athlete data immediately after connecting
-        // Use the athlete data included in the token exchange response if possible
-        const athleteData = tokens.athlete || await stravaService.fetchStravaAthleteData(validatedUserId);
+            // From this point on, even if subsequent steps fail, we've successfully connected
+            // the account so we want to return success to the user
 
-        if (athleteData) {
-            console.log(`Processing initial Strava athlete data for user ${validatedUserId}`);
-            await userService.updateProfileFromStrava(validatedUserId, athleteData);
-        } else {
-            console.warn(`Could not fetch/find initial Strava athlete data for user ${validatedUserId} after connection.`);
+            // Use a try/catch block for profile update so it doesn't fail the whole process
+            try {
+                // Fetch athlete data immediately after connecting
+                // Use the athlete data included in the token exchange response if possible
+                const athleteData = tokens.athlete || await stravaService.fetchStravaAthleteData(validatedUserId);
+
+                if (athleteData) {
+                    console.log(`Processing initial Strava athlete data for user ${validatedUserId}`);
+                    await userService.updateProfileFromStrava(validatedUserId, athleteData);
+                } else {
+                    console.warn(`Could not fetch/find initial Strava athlete data for user ${validatedUserId} after connection.`);
+                }
+            } catch (profileError) {
+                // Log but don't fail the whole process
+                console.error('Error updating profile from Strava data:', profileError);
+            }
+
+            // Also wrap sync in try/catch as it's non-critical
+            try {
+                // Trigger asynchronous initial activity sync
+                stravaService.triggerInitialActivitySync(validatedUserId);
+            } catch (syncError) {
+                // Log but don't fail the whole process
+                console.error('Error triggering initial activity sync:', syncError);
+            }
+
+            // Redirect user to a success page or back to settings
+            console.log(`Strava connection successful for user ${validatedUserId}!`);
+            res.redirect('http://localhost:8081/settings?strava_success=true');
+            
+        } catch (authError) {
+            // If the token exchange or saving connection fails, that's a critical error
+            console.error('Error in Strava authentication process:', authError);
+            return res.redirect('http://localhost:8081/settings?strava_error=callback_failed');
         }
-
-        // Trigger asynchronous initial activity sync
-        stravaService.triggerInitialActivitySync(validatedUserId);
-
-        // Redirect user to a success page or back to settings
-        console.log(`Strava connection successful, profile updated, and initial sync triggered for user ${validatedUserId}!`);
-        res.redirect('http://localhost:8081/settings?strava_success=true');
 
     } catch (error) {
         console.error('Error handling Strava callback:', error);
