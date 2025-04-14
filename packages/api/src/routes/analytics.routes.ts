@@ -1,4 +1,4 @@
-import express from 'express';
+const express = require('express');
 import { authenticateJwt } from '../middleware/auth';
 import { AnalyticsController } from '../controllers/analytics.controller';
 
