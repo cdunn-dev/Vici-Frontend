@@ -1,7 +1,24 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { TrainingService } from '../services/training.service';
 
 const prisma = new PrismaClient();
+const trainingService = new TrainingService();
+
+// Define AuthenticatedUser interface (or import if defined elsewhere)
+interface AuthenticatedUser {
+    id: string;
+    // ... other user properties
+}
+
+// Augment Express Request type (or use a dedicated middleware)
+declare global {
+    namespace Express {
+        interface Request {
+            user?: AuthenticatedUser;
+        }
+    }
+}
 
 /**
  * Controller for training-related operations
@@ -87,41 +104,50 @@ export class TrainingController {
   };
   
   /**
-   * Create a new training plan
+   * Create a new training plan PREVIEW using the LLM service.
    */
   public createPlan = async (req: Request, res: Response) => {
     try {
+      if (!req.user || !req.user.id) {
+        // This check might be redundant if authenticateJwt always runs before
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+      }
       const userId = req.user.id;
-      const { goal, settings, status = 'Active' } = req.body;
       
+      // Assuming the frontend sends goal and preferences in the body
+      // Adjust property names as needed based on CreatePlanInput interface
+      const { goal, preferences } = req.body; 
+
       // Validate input
-      if (!goal || !settings) {
+      if (!goal || !preferences) {
         return res.status(400).json({
           success: false,
-          message: 'Goal and settings are required'
+          message: 'Goal and preferences are required'
         });
       }
       
-      // Create new plan
-      const plan = await prisma.trainingPlan.create({
-        data: {
-          userId,
-          status,
-          goal,
-          settings
-        }
+      // Call the service to generate and save the preview plan
+      const previewPlan = await trainingService.createTrainingPlanPreview({
+        userId,
+        goal,
+        preferences,
       });
-      
+
+      // Return the preview plan (status: Preview)
       return res.status(201).json({
         success: true,
-        data: plan,
-        message: 'Training plan created successfully'
+        data: previewPlan,
+        message: 'Training plan preview generated successfully'
       });
-    } catch (error) {
-      console.error('Error creating training plan:', error);
-      return res.status(500).json({
+
+    } catch (error: any) {
+      console.error('Error creating training plan preview:', error);
+      // Provide more specific error message if possible
+      const message = error.message || 'Server error during plan generation';
+      const status = message.includes('LLM Service not available') ? 503 : 500;
+      return res.status(status).json({
         success: false,
-        message: 'Server error'
+        message: message
       });
     }
   };
@@ -639,6 +665,48 @@ export class TrainingController {
       return res.status(500).json({
         success: false,
         message: 'Server error'
+      });
+    }
+  };
+
+  /**
+   * Approve a training plan preview.
+   */
+  public approvePlan = async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+      }
+      const userId = req.user.id;
+      const { planId } = req.params;
+
+      if (!planId) {
+        return res.status(400).json({ success: false, message: 'Plan ID is required' });
+      }
+      
+      const approvedPlan = await trainingService.approveTrainingPlan(planId, userId);
+
+      return res.status(200).json({
+        success: true,
+        data: approvedPlan,
+        message: 'Training plan approved successfully'
+      });
+
+    } catch (error: any) {
+      console.error(`Error approving training plan ${req.params.planId}:`, error);
+      // Handle specific errors like "Not found" or "Invalid status"
+      let statusCode = 500;
+      if (error.message?.includes('not found')) {
+        statusCode = 404;
+      } else if (error.message?.includes('cannot be approved')) {
+        statusCode = 409; // Conflict - plan is in wrong state
+      } else if (error.message?.includes('access denied')) {
+        statusCode = 403; // Forbidden
+      }
+      
+      return res.status(statusCode).json({
+        success: false,
+        message: error.message || 'Server error during plan approval'
       });
     }
   };

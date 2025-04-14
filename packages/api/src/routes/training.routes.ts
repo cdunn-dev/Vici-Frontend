@@ -45,6 +45,13 @@ router.put('/plans/:id', authenticateJwt, trainingController.updatePlan);
 router.delete('/plans/:id', authenticateJwt, trainingController.deletePlan);
 
 /**
+ * @route POST /api/training/plans/:planId/approve
+ * @desc Approve a training plan preview, making it active.
+ * @access Private
+ */
+router.post('/plans/:planId/approve', authenticateJwt, trainingController.approvePlan);
+
+/**
  * Workout Routes
  */
 
