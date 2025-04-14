@@ -4,103 +4,159 @@ import Foundation
 // These extensions provide sample data for SwiftUI previews
 // They should NOT be used in production code
 
+/// Preview extensions for the Workout model to help with the transition from mock data
 extension Workout {
-    /// Sample workout for preview purposes
+    /// A sample workout for previews
     static var sampleWorkout: Workout {
         Workout(
-            id: "preview-workout-1",
-            planId: "preview-plan-1",
-            userId: "preview-user-1",
+            id: "sample-1",
+            planId: "plan-1",
+            userId: "user-1",
             name: "Easy Recovery Run",
-            description: "An easy recovery run to promote blood flow and active recovery.",
-            scheduledDate: Date().addingTimeInterval(3600),
+            description: "Start the week with a gentle recovery run to flush out any fatigue from the weekend.",
+            scheduledDate: Date(),
             completed: false,
             completedDate: nil,
-            duration: 45,
+            duration: 30,
             distance: 5000,
-            activities: nil,
+            activities: [],
             createdAt: Date(),
             updatedAt: Date()
         )
     }
     
-    /// Sample completed workout for preview purposes
-    static var sampleCompletedWorkout: Workout {
-        Workout(
-            id: "preview-workout-2",
-            planId: "preview-plan-1",
-            userId: "preview-user-1",
-            name: "Tempo Run",
-            description: "20 minute warm-up, 20 minutes at threshold pace, 10 minute cool-down.",
-            scheduledDate: Date().addingTimeInterval(-86400),
-            completed: true,
-            completedDate: Date().addingTimeInterval(-82800),
-            duration: 50,
-            distance: 8000,
-            activities: nil,
-            createdAt: Date().addingTimeInterval(-172800),
-            updatedAt: Date().addingTimeInterval(-82800)
-        )
-    }
-    
-    /// Sample preview workouts for a week
+    /// A collection of workouts for a preview week
     static var previewWeek: [Workout] {
         let calendar = Calendar.current
         let today = Date()
-        let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        
+        // Create date components for this week
+        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        let weekDates = (0...6).map { day in
+            calendar.date(byAdding: .day, value: day, to: monday)!
+        }
         
         return [
+            // Monday - Easy Run
             Workout(
-                id: "preview-workout-3",
-                planId: "preview-plan-1",
-                userId: "preview-user-1",
-                name: "Easy Run",
-                description: "Easy aerobic run at conversational pace.",
-                scheduledDate: calendar.date(byAdding: .day, value: 0, to: weekStartDate)!,
-                completed: true,
-                completedDate: calendar.date(byAdding: .day, value: 0, to: weekStartDate)!,
+                id: "w1",
+                planId: "plan-1",
+                userId: "user-1",
+                name: "Easy Recovery Run",
+                description: "Start the week with a gentle recovery run to flush out any fatigue from the weekend.",
+                scheduledDate: weekDates[0],
+                completed: weekDates[0] < today,
+                completedDate: weekDates[0] < today ? weekDates[0] : nil,
+                duration: 30,
+                distance: 5000,
+                activities: [],
+                createdAt: Date().addingTimeInterval(-86400),
+                updatedAt: Date()
+            ),
+            
+            // Wednesday - Intervals
+            Workout(
+                id: "w2",
+                planId: "plan-1",
+                userId: "user-1",
+                name: "Interval Workout",
+                description: "6 x 400m repeats with 200m recovery jogs. Target pace 10-15 sec/km faster than 5K pace.",
+                scheduledDate: weekDates[2],
+                completed: weekDates[2] < today,
+                completedDate: weekDates[2] < today ? weekDates[2] : nil,
                 duration: 40,
-                distance: 6000,
-                activities: nil,
-                createdAt: Date().addingTimeInterval(-604800),
-                updatedAt: Date().addingTimeInterval(-518400)
-            ),
-            Workout(
-                id: "preview-workout-4",
-                planId: "preview-plan-1",
-                userId: "preview-user-1",
-                name: "Interval Training",
-                description: "6 x 400m repeats with 200m recovery jogs.",
-                scheduledDate: calendar.date(byAdding: .day, value: 2, to: weekStartDate)!,
-                completed: false,
-                completedDate: nil,
-                duration: 45,
                 distance: 7000,
-                activities: nil,
-                createdAt: Date().addingTimeInterval(-604800),
-                updatedAt: Date().addingTimeInterval(-604800)
+                activities: [],
+                createdAt: Date().addingTimeInterval(-86400),
+                updatedAt: Date()
             ),
+            
+            // Friday - Tempo Run
             Workout(
-                id: "preview-workout-5",
-                planId: "preview-plan-1",
-                userId: "preview-user-1",
+                id: "w3",
+                planId: "plan-1",
+                userId: "user-1",
+                name: "Tempo Run",
+                description: "Warm up 10min, 20min at marathon pace, 10min cooldown.",
+                scheduledDate: weekDates[4],
+                completed: weekDates[4] < today,
+                completedDate: weekDates[4] < today ? weekDates[4] : nil,
+                duration: 45,
+                distance: 8000,
+                activities: [],
+                createdAt: Date().addingTimeInterval(-86400),
+                updatedAt: Date()
+            ),
+            
+            // Saturday - Easy Run
+            Workout(
+                id: "w4",
+                planId: "plan-1",
+                userId: "user-1",
+                name: "Easy Run",
+                description: "Easy effort run with focus on good form. Keep the effort conversational.",
+                scheduledDate: weekDates[5],
+                completed: weekDates[5] < today,
+                completedDate: weekDates[5] < today ? weekDates[5] : nil,
+                duration: 35,
+                distance: 6000,
+                activities: [],
+                createdAt: Date().addingTimeInterval(-86400),
+                updatedAt: Date()
+            ),
+            
+            // Sunday - Long Run
+            Workout(
+                id: "w5",
+                planId: "plan-1",
+                userId: "user-1",
                 name: "Long Run",
-                description: "Build endurance with steady pace throughout.",
-                scheduledDate: calendar.date(byAdding: .day, value: 5, to: weekStartDate)!,
-                completed: false,
-                completedDate: nil,
+                description: "Weekly long run to build endurance. Keep the pace easy and focus on time on feet.",
+                scheduledDate: weekDates[6],
+                completed: weekDates[6] < today,
+                completedDate: weekDates[6] < today ? weekDates[6] : nil,
                 duration: 90,
-                distance: 15000,
-                activities: nil,
-                createdAt: Date().addingTimeInterval(-604800),
-                updatedAt: Date().addingTimeInterval(-604800)
+                distance: 16000,
+                activities: [],
+                createdAt: Date().addingTimeInterval(-86400),
+                updatedAt: Date()
             )
         ]
     }
     
-    /// Returns a workout scheduled for today (for preview purposes)
+    /// Today's workout for preview
     static var previewTodaysWorkout: Workout? {
-        let today = Calendar.current.startOfDay(for: Date())
-        return previewWeek.first { Calendar.current.isDate($0.scheduledDate, inSameDayAs: today) }
+        let calendar = Calendar.current
+        let today = Date()
+        
+        return previewWeek.first(where: { workout in
+            calendar.isDate(calendar.startOfDay(for: workout.scheduledDate), 
+                           inSameDayAs: calendar.startOfDay(for: today))
+        })
+    }
+    
+    /// Format duration in minutes to a display string
+    func formattedDuration() -> String {
+        guard let duration = duration else { return "N/A" }
+        
+        let hours = duration / 60
+        let minutes = duration % 60
+        
+        if hours > 0 {
+            return String(format: "%dh %dm", hours, minutes)
+        } else {
+            return String(format: "%d min", minutes)
+        }
+    }
+    
+    /// Format distance in meters to a display string
+    func formattedDistance() -> String? {
+        guard let distance = distance else { return nil }
+        
+        if distance >= 1000 {
+            return String(format: "%.2f km", distance / 1000)
+        } else {
+            return String(format: "%.0f m", distance)
+        }
     }
 } 

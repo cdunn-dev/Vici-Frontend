@@ -310,6 +310,25 @@ class TrainingService {
         return try await apiClient.post(endpoint: "training/plans/\(planId)/approve", body: nil)
     }
     
+    /// Create a new training plan
+    func createTrainingPlan(name: String, description: String?, goal: String?, startDate: Date, endDate: Date) async throws -> TrainingPlan {
+        var parameters: [String: Any] = [
+            "name": name,
+            "startDate": ISO8601DateFormatter().string(from: startDate),
+            "endDate": ISO8601DateFormatter().string(from: endDate)
+        ]
+        
+        if let description = description {
+            parameters["description"] = description
+        }
+        
+        if let goal = goal {
+            parameters["goal"] = goal
+        }
+        
+        return try await apiClient.post(endpoint: "training/plans", body: parameters)
+    }
+    
     /// Mark a workout as completed
     func completeWorkout(id: String, completionDate: Date, notes: String? = nil, planId: String? = nil) async throws -> Workout {
         var parameters: [String: Any] = [
