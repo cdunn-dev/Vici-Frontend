@@ -3,6 +3,8 @@ import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
 import trainingRoutes from './training.routes';
 import analyticsRoutes from './analytics.routes';
+import stravaRoutes from './strava.routes';
+import jobRoutes from './job.routes';
 
 const router = express.Router();
 
@@ -21,5 +23,9 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/training', trainingRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/integrations/strava', stravaRoutes);
+
+// Mount internal job routes
+router.use('/jobs', jobRoutes);
 
 export default router; 

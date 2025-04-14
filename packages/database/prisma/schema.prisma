@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,105 +8,401 @@ datasource db {
 }
 
 model User {
-  id              String         @id @default(uuid())
-  email           String         @unique
-  password        String
-  name            String
-  profilePicture  String?
-  dateOfBirth     DateTime?
-  gender          String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  settings        UserSettings?
-  trainingPlans   TrainingPlan[]
-  workouts        Workout[]
-  connections     UserConnection[]
-  runnerProfile   RunnerProfile?
+  id                String           @id @default(uuid())
+  email             String           @unique
+  passwordHash      String
+  name              String
+  profilePictureUrl String?
+  dateOfBirth       DateTime?
+  gender            Gender?
+  emailVerified     Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  Activity          Activity[]
+  runnerProfile     RunnerProfile?
+  trainingPlans     TrainingPlan[]
+  UserBadge         UserBadge[]
+  connections       UserConnection[]
+  settings          UserSettings?
+  stravaAuthStates  StravaAuthState[]
 }
 
 model UserSettings {
-  id                     String                    @id @default(uuid())
-  userId                 String                    @unique
-  user                   User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  distanceUnit           String                    @default("km")
-  language               String                    @default("en")
-  coachingStyle          String                    @default("Balanced")
-  privacyDataSharing     Boolean                   @default(false)
+  id                      String                   @id @default(uuid())
+  userId                  String                   @unique
+  distanceUnit            DistanceUnit             @default(km)
+  language                String                   @default("en")
+  coachingStyle           CoachingStyle            @default(Balanced)
+  privacyDataSharing      Boolean                  @default(false)
+  updatedAt               DateTime
   notificationPreferences NotificationPreferences?
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model NotificationPreferences {
-  id            String       @id @default(uuid())
-  settingsId    String       @unique
-  userSettings  UserSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
-  email         Boolean      @default(true)
-  push          Boolean      @default(true)
-  sms           Boolean      @default(false)
-  inApp         Boolean      @default(true)
+  id           String       @id @default(uuid())
+  settingsId   String       @unique
+  email        Boolean      @default(true)
+  push         Boolean      @default(true)
+  sms          Boolean      @default(false)
+  inApp        Boolean      @default(true)
+  userSettings UserSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
 }
 
 model TrainingPlan {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      String    @default("Active")
-  goal        Json      // Stored as JSON { type, distance?, time?, date?, name?, description? }
-  settings    Json      // Stored as JSON { daysPerWeek, startDate, endDate?, preferredRunDays, maxRunDistance?, maxRunTime?, includeIntervals, includeLongRuns, includeRecoveryRuns, intensity }
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  workouts    Workout[]
+  id                  String               @id @default(uuid())
+  userId              String
+  status              PlanStatus           @default(Preview)
+  startDate           DateTime?
+  endDate             DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  Goal                Goal?
+  PlanCompletionStats PlanCompletionStats?
+  PlanPreferences     PlanPreferences?
+  PlanSummary         PlanSummary?
+  PlanWeek            PlanWeek[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Workout {
-  id              String       @id @default(uuid())
-  trainingPlanId  String
-  trainingPlan    TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  type            String
-  title           String
-  description     String?
-  scheduledDate   DateTime
-  duration        Int          // In seconds
-  distance        Int?         // In meters
-  steps           Json         // Array of workout steps
-  completedDate   DateTime?
-  actualDuration  Int?         // In seconds
-  actualDistance  Int?         // In meters
-  status          String       @default("scheduled")
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                    String               @id @default(uuid())
+  planWeekId            String?
+  date                  DateTime
+  dayOfWeek             DayOfWeek?
+  workoutType           WorkoutType
+  status                WorkoutStatus        @default(Upcoming)
+  description           String?
+  purpose               String?
+  distanceMeters        Int?
+  durationSeconds       Int?
+  paceTargetId          String?              @unique
+  heartRateZoneTarget   Int?
+  perceivedEffortTarget String?
+  reconciledActivityId  String?              @unique
+  Activity              Activity?
+  PaceTarget            PaceTarget?
+  PlanWeek              PlanWeek?            @relation(fields: [planWeekId], references: [id], onDelete: Cascade)
+  WorkoutAlternative    WorkoutAlternative[]
+  WorkoutComponent      WorkoutComponent[]
+
+  @@index([date])
+  @@index([planWeekId])
 }
 
-// User connections to third-party services (Strava, Garmin, etc.)
 model UserConnection {
   id             String    @id @default(cuid())
   userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider       String    // 'strava', 'garmin', etc.
+  provider       String
   accessToken    String
   refreshToken   String?
   providerUserId String?
   expiresAt      DateTime?
+  scopes         String[]
   lastSyncAt     DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, provider])
+  @@index([userId])
 }
 
-// Runner profile with running-specific data
 model RunnerProfile {
-  id               String         @id @default(cuid())
-  userId           String         @unique
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fitnessLevel     String         // 'Beginner', 'Intermediate', 'Advanced'
-  weeklyDistance   Float?         // in meters
-  weeklyFrequency  Int?           // number of runs per week
-  recentRaces      Json?          // array of recent races
-  preferredRunTypes Json?         // array of preferred run types
-  injuryHistory    Json?          // array of injuries
-  personalBests    Json?          // array of personal bests
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-} 
+  id               String           @id @default(cuid())
+  userId           String           @unique
+  experienceLevel  ExperienceLevel?
+  fitnessLevel     String?
+  shoePreferences  String[]
+  lastCalculatedAt DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  PersonalBest     PersonalBest[]
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id                       String              @id
+  userId                   String
+  source                   ActivitySource
+  sourceActivityId         String?
+  startTime                DateTime
+  name                     String?
+  description              String?
+  distanceMeters           Int
+  movingTimeSeconds        Int
+  elapsedTimeSeconds       Int
+  averagePaceSecondsPerKm  Int
+  maxPaceSecondsPerKm      Int?
+  averageHeartRate         Int?
+  maxHeartRate             Int?
+  totalElevationGainMeters Int?
+  mapThumbnailUrl          String?
+  mapPolyline              String?
+  hasPhotos                Boolean             @default(false)
+  photos                   Json?
+  detailedStats            Json?
+  isReconciled             Boolean             @default(false)
+  reconciliationType       ReconciliationType?
+  reconciledWorkoutId      String?             @unique
+  perceivedEffort          Int?
+  journalEntry             String?
+  syncedAt                 DateTime            @default(now())
+  updatedAt                DateTime
+  Workout                  Workout?            @relation(fields: [reconciledWorkoutId], references: [id])
+  User                     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ActivityLap              ActivityLap[]
+  PersonalBest             PersonalBest[]
+
+  @@unique([userId, source, sourceActivityId])
+  @@index([startTime])
+  @@index([userId])
+}
+
+model ActivityLap {
+  id                      String   @id
+  activityId              String
+  lapNumber               Int
+  distanceMeters          Int
+  startTime               DateTime
+  elapsedTimeSeconds      Int
+  movingTimeSeconds       Int
+  averagePaceSecondsPerKm Int
+  averageHeartRate        Int?
+  splitType               String
+  Activity                Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+}
+
+model Badge {
+  id          String      @id
+  name        String      @unique
+  description String
+  imageUrl    String?
+  criteria    Json?
+  UserBadge   UserBadge[]
+}
+
+model Goal {
+  id                String       @id
+  trainingPlanId    String       @unique
+  type              GoalType
+  raceName          String?
+  distanceMeters    Int?
+  raceDate          DateTime?
+  previousPbSeconds Int?
+  goalTimeSeconds   Int?
+  objective         String?
+  TrainingPlan      TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+}
+
+model PaceTarget {
+  id               String            @id
+  minSecondsPerKm  Int?
+  maxSecondsPerKm  Int?
+  workoutId        String?           @unique
+  componentId      String?           @unique
+  WorkoutComponent WorkoutComponent? @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  Workout          Workout?          @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+}
+
+model PersonalBest {
+  id              String        @id
+  runnerProfileId String
+  distanceMeters  Int
+  timeSeconds     Int
+  dateAchieved    DateTime?
+  activityId      String?
+  Activity        Activity?     @relation(fields: [activityId], references: [id])
+  RunnerProfile   RunnerProfile @relation(fields: [runnerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([runnerProfileId])
+}
+
+model PlanCompletionStats {
+  id                       String       @id
+  trainingPlanId           String       @unique
+  overallCompletionPercent Float?
+  mileageCompletionPercent Float?
+  goalAchieved             Boolean?
+  fitnessImprovementMetric String?
+  actualRaceTimeSeconds    Int?
+  TrainingPlan             TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+}
+
+model PlanPreferences {
+  id                         String        @id
+  trainingPlanId             String        @unique
+  targetWeeklyDistanceMeters Int
+  runningDaysPerWeek         Int
+  qualityWorkoutsPerWeek     Int
+  preferredLongRunDay        DayOfWeek
+  coachingStyle              CoachingStyle
+  TrainingPlan               TrainingPlan  @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+}
+
+model PlanSummary {
+  id                      String       @id
+  trainingPlanId          String       @unique
+  durationWeeks           Int
+  totalDistanceMeters     Int
+  avgWeeklyDistanceMeters Int
+  TrainingPlan            TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+}
+
+model PlanWeek {
+  id                      String       @id
+  trainingPlanId          String
+  weekNumber              Int
+  startDate               DateTime
+  endDate                 DateTime
+  phase                   String?
+  totalDistanceMeters     Int
+  completedDistanceMeters Int?         @default(0)
+  TrainingPlan            TrainingPlan @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  Workout                 Workout[]
+
+  @@unique([trainingPlanId, weekNumber])
+  @@index([trainingPlanId])
+}
+
+model UserBadge {
+  id         String   @id
+  userId     String
+  badgeId    String
+  earnedDate DateTime @default(now())
+  Badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model WorkoutAlternative {
+  id          String  @id
+  workoutId   String
+  description String
+  reason      String?
+  Workout     Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@index([workoutId])
+}
+
+model WorkoutComponent {
+  id                    String               @id
+  workoutId             String
+  sequence              Int
+  type                  WorkoutComponentType
+  description           String?
+  distanceMeters        Int?
+  durationSeconds       Int?
+  paceTargetId          String?              @unique
+  heartRateZoneTarget   Int?
+  perceivedEffortTarget String?
+  repeatCount           Int?
+  PaceTarget            PaceTarget?
+  Workout               Workout              @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@index([workoutId])
+}
+
+model StravaAuthState {
+  id        String   @id @default(cuid())
+  state     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum ActivitySource {
+  Strava
+  Manual
+  GarminConnect
+  Other
+}
+
+enum CoachingStyle {
+  Motivational
+  Authoritative
+  Technical
+  DataDriven
+  Balanced
+}
+
+enum DayOfWeek {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
+}
+
+enum DistanceUnit {
+  km
+  miles
+}
+
+enum ExperienceLevel {
+  Beginner
+  Intermediate
+  Advanced
+}
+
+enum Gender {
+  Female
+  Male
+  Other
+  PreferNotToSay
+}
+
+enum GoalType {
+  Race
+  NonRace
+}
+
+enum PlanStatus {
+  Preview
+  Active
+  Completed
+  Cancelled
+}
+
+enum ReconciliationType {
+  Yes
+  No
+  WithModifications
+  Auto
+}
+
+enum WorkoutComponentType {
+  WarmUp
+  Run
+  Recovery
+  CoolDown
+}
+
+enum WorkoutStatus {
+  Upcoming
+  Completed
+  Missed
+  Skipped
+}
+
+enum WorkoutType {
+  EasyRun
+  Tempo
+  Intervals
+  LongRun
+  Rest
+  CrossTraining
+  Race
+}

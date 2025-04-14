@@ -63,10 +63,10 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
   - [x] Database models (Prisma) setup
   - [x] Basic API endpoints structure setup
   - [x] Authentication services & middleware setup
-  - [ ] Strava Integration Services:
-    - [ ] Auth/OAuth flow implementation
-    - [ ] Athlete data import implementation
-    - [ ] Activity history import implementation
+  - [/] Strava Integration Services:
+    - [x] Auth/OAuth flow implementation
+    - [x] Athlete data import implementation
+    - [/] Activity history import implementation
   - [ ] LLM Integration Services:
     - [ ] API configuration and connection setup
     - [ ] Training plan generation prompt engineering

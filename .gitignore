@@ -85,6 +85,7 @@ local.properties
 .env
 .env.local
 .env.*.local
+packages/api/.env
 
 # Build output
 dist/
