@@ -23,6 +23,8 @@
   },
   "packageManager": "yarn@4.8.1",
   "devDependencies": {
-    "dotenv-cli": "^8.0.0"
+    "@types/supertest": "^6.0.3",
+    "dotenv-cli": "^8.0.0",
+    "supertest": "^7.1.0"
   }
 }
