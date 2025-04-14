@@ -1,7 +1,8 @@
 // Training Service: Handles business logic related to training plans and workouts
-import { PrismaClient, User, RunnerProfile, TrainingPlan } from '@prisma/client';
+import { PrismaClient, User, RunnerProfile, TrainingPlan, PlanWeek, Workout, PaceTarget, WorkoutType, DayOfWeek, PlanStatus } from '@prisma/client';
 import { LLMService } from './llm.service';
 import { UserService } from './user.service'; // Might need user data
+import { z } from 'zod';
 
 const prisma = new PrismaClient();
 const llmService = new LLMService();
@@ -136,6 +137,9 @@ export class TrainingService {
             profile: {
                 experienceLevel: userProfile.runnerProfile?.experienceLevel,
                 fitnessLevel: userProfile.runnerProfile?.fitnessLevel, 
+                personalBests: userProfile.runnerProfile?.personalBests
+                    ? JSON.parse(JSON.stringify(userProfile.runnerProfile.personalBests)) // Basic parsing/cloning
+                    : null,
             },
             goal: input.goal, 
             preferences: input.preferences,
@@ -146,60 +150,72 @@ export class TrainingService {
 
         // 2. Call LLMService to generate the plan structure
         console.log(`Calling LLM to generate plan structure for user ${userId}`);
-        const generatedPlanStructure = await llmService.generateTrainingPlan(llmInputData);
+        // Assume llmPlanResponseSchema ensures the structure
+        const generatedPlanStructure: z.infer<typeof llmPlanResponseSchema> = await llmService.generateTrainingPlan(llmInputData);
 
-        // Basic validation (more robust validation like Zod is recommended)
-        if (!generatedPlanStructure || !generatedPlanStructure.weeks || !Array.isArray(generatedPlanStructure.weeks)) {
-            throw new Error('LLM failed to return a valid plan structure with a weeks array.');
-        }
+        // --- Removed basic validation here, as Zod validation happens in LLMService ---
         
-        const planSummary = generatedPlanStructure.planSummary; // Extract summary if provided by LLM
+        const planSummary = generatedPlanStructure.planSummary;
 
-        // 3. Save the generated plan as a "Preview" in the database
+        // 3. Map and Save the generated plan as a "Preview" in the database
         console.log(`Mapping LLM response and saving generated plan preview to DB for user ${userId}`);
         try {
+            // Helper function to safely map string to enum (case-insensitive)
+            const mapToEnum = <T extends object>(enumObj: T, value: string | null | undefined): T[keyof T] | undefined => {
+                if (!value) return undefined;
+                const upperValue = value.toUpperCase();
+                for (const key in enumObj) {
+                    if (enumObj[key as keyof T]?.toString().toUpperCase() === upperValue) {
+                        return enumObj[key as keyof T];
+                    }
+                }
+                console.warn(`Could not map value "${value}" to enum ${Object.keys(enumObj).join('|')}. Using default or undefined.`);
+                return undefined; // Or return a default enum value if appropriate
+            };
+            
             const savedPlan = await prisma.trainingPlan.create({
                 data: {
                     userId: userId,
-                    status: 'Preview', // Save as Preview first
-                    goal: input.goal, // Store the original goal request as JSON
-                    // Store original preferences if needed, or derive from plan
-                    // preferences: input.preferences, 
+                    status: PlanStatus.Preview, // Use Prisma enum
+                    goal: input.goal, 
+                    // preferences: input.preferences, // Consider storing if needed
                     
-                    // --- Map LLM Output to Nested Prisma Create --- 
-                    // Add PlanSummary if available and schema supports it
-                    // PlanSummary: planSummary ? { create: planSummary } : undefined,
+                    // --- Nested Prisma Create with Detailed Mapping --- 
+                    // PlanSummary: planSummary ? { create: planSummary } : undefined, // Add if model exists
                     
-                    PlanWeek: { // Use the correct relation field name from schema.prisma
-                        create: generatedPlanStructure.weeks.map((week: any) => ({
+                    PlanWeek: { 
+                        create: generatedPlanStructure.weeks.map((week) => ({
                             weekNumber: week.weekNumber,
-                            startDate: new Date(week.startDate), // Ensure valid Date object
-                            endDate: new Date(week.endDate),     // Ensure valid Date object
+                            startDate: new Date(week.startDate + 'T00:00:00Z'), // Assume UTC start of day
+                            endDate: new Date(week.endDate + 'T23:59:59Z'),     // Assume UTC end of day
                             phase: week.phase || null,
                             totalDistanceMeters: Math.round(week.totalDistanceMeters || 0),
-                            // completedDistanceMeters defaults to 0
-                            Workout: { // Use the correct relation field name
-                                create: week.dailyWorkouts.map((workout: any) => ({
-                                    userId: userId, // Important: Link workout to user too
-                                    date: new Date(workout.date), // Ensure valid Date object
-                                    dayOfWeek: workout.dayOfWeek || null, // Ensure matches DayOfWeek enum if used
-                                    // Ensure workoutType matches WorkoutType enum if used
-                                    workoutType: workout.workoutType || 'Run', 
+                            Workout: { 
+                                create: week.dailyWorkouts.map((workout) => ({
+                                    userId: userId, 
+                                    date: new Date(workout.date + 'T12:00:00Z'), // Assume UTC midday for workout time
+                                    dayOfWeek: mapToEnum(DayOfWeek, workout.dayOfWeek), // Map to enum
+                                    workoutType: mapToEnum(WorkoutType, workout.workoutType) || WorkoutType.Run, // Map or default
                                     description: workout.description || null,
                                     purpose: workout.purpose || null,
                                     distanceMeters: workout.distanceMeters ? Math.round(workout.distanceMeters) : null,
                                     durationSeconds: workout.durationSeconds ? Math.round(workout.durationSeconds) : null,
-                                    status: 'Upcoming', // Default status
-                                    // TODO: Map paceTarget correctly if provided and schema supports it
-                                    // PaceTarget: workout.paceTarget ? { create: workout.paceTarget } : undefined,
-                                    // Map other fields like heartRateZoneTarget, perceivedEffortTarget if needed
+                                    status: 'Upcoming', 
+                                    // Create PaceTarget if data exists and is valid
+                                    PaceTarget: workout.paceTarget && (workout.paceTarget.minSecondsPerKm || workout.paceTarget.maxSecondsPerKm) ? { 
+                                        create: { 
+                                            minSecondsPerKm: workout.paceTarget.minSecondsPerKm ? Math.round(workout.paceTarget.minSecondsPerKm) : null,
+                                            maxSecondsPerKm: workout.paceTarget.maxSecondsPerKm ? Math.round(workout.paceTarget.maxSecondsPerKm) : null,
+                                        }
+                                    } : undefined,
+                                    // Map other fields like heartRateZoneTarget, etc. here if needed
                                 }))
                             }
                         }))
                     }
                 },
-                // Include nested relations in the return object if needed for the response
-                // include: { PlanWeek: { include: { Workout: true } } } 
+                // Optionally include generated relations in the result
+                include: { PlanWeek: { include: { Workout: { include: { PaceTarget: true } } } } }
             });
 
             console.log(`Successfully created training plan preview ${savedPlan.id} for user ${userId}`);
@@ -283,24 +299,45 @@ export class TrainingService {
         
         console.log(`Handling Ask Vici request for user ${userId}, plan ${planId}: "${query}"`);
 
-        // 1. Fetch necessary context: Current plan details, user profile
+        // 1. Fetch necessary context: Current plan details, user profile, current/upcoming week
         const plan = await prisma.trainingPlan.findUnique({
             where: { id: planId },
-            // Include relevant parts of the plan for context
-            // include: { PlanWeek: { include: { Workout: true } } }
-            // TODO: Fetch only necessary plan context to keep prompt manageable
+            // Include weeks and workouts to provide context
+            include: { 
+                PlanWeek: { 
+                    include: { Workout: true },
+                    orderBy: { weekNumber: 'asc' } // Order weeks chronologically
+                } 
+            }
         });
 
-        if (!plan) {
-            throw new Error('Training plan not found.');
+        if (!plan || plan.userId !== userId) {
+            throw new Error('Training plan not found or user not authorized.');
         }
-        if (plan.userId !== userId) {
-            throw new Error('User not authorized for this training plan.');
-        }
-        if (plan.status !== 'Active') {
-             // Maybe allow asking about Preview plans too?
-             // throw new Error('Cannot ask Vici about a non-active plan.');
-             console.warn(`User ${userId} asking Vici about a non-active plan (${plan.status})`);
+        
+        // Find current/upcoming week data for context
+        let currentWeekData = null;
+        const today = new Date();
+        today.setUTCHours(0,0,0,0); // Normalize time for comparison
+        if (plan.PlanWeek && plan.PlanWeek.length > 0) {
+             // Find the first week where the endDate is today or later
+             const currentOrNextWeek = plan.PlanWeek.find(week => new Date(week.endDate) >= today);
+             if(currentOrNextWeek) {
+                currentWeekData = {
+                    weekNumber: currentOrNextWeek.weekNumber,
+                    startDate: currentOrNextWeek.startDate.toISOString().split('T')[0],
+                    endDate: currentOrNextWeek.endDate.toISOString().split('T')[0],
+                    phase: currentOrNextWeek.phase,
+                    workouts: currentOrNextWeek.Workout.map(wo => ({ // Simplify workouts for prompt
+                        date: wo.date.toISOString().split('T')[0],
+                        workoutType: wo.workoutType,
+                        description: wo.description,
+                        distanceMeters: wo.distanceMeters,
+                        durationSeconds: wo.durationSeconds,
+                        status: wo.status
+                    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Sort workouts by date
+                };
+             }
         }
         
         // Fetch user profile data if needed for the prompt
@@ -315,12 +352,10 @@ export class TrainingService {
             query: query,
             context: {
                 plan: { 
-                    // Selectively include relevant plan data
                     id: plan.id,
                     status: plan.status,
                     goal: plan.goal, 
-                    // TODO: Include summary of current/upcoming week(s)?
-                    // weeks: plan.PlanWeek?.slice(-2) // Example: Last 2 weeks?
+                    currentWeekData: currentWeekData // Pass the fetched week data
                 },
                 profile: {
                      experienceLevel: userProfile?.runnerProfile?.experienceLevel,

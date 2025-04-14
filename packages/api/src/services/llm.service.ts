@@ -1,5 +1,6 @@
 // LLM Service: Handles interactions with the Language Model provider (Google Gemini)
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import { z } from "zod"; // Import Zod
 
 const API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
 
@@ -21,6 +22,48 @@ if (API_KEY) {
 } else {
     console.error("LLM Service could not initialize due to missing API key.");
 }
+
+// --- Zod Schema Definition for LLM Training Plan Output --- 
+const paceTargetSchema = z.object({
+    minSecondsPerKm: z.number().positive().nullable(),
+    maxSecondsPerKm: z.number().positive().nullable(),
+}).nullable();
+
+const dailyWorkoutSchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD format
+    dayOfWeek: z.string(), // Could use z.enum([...]) if needed
+    workoutType: z.string(), // Could use z.enum([...]) based on Prisma enum
+    description: z.string(),
+    purpose: z.string(),
+    distanceMeters: z.number().positive().int().nullable(),
+    durationSeconds: z.number().positive().int().nullable(),
+    paceTarget: paceTargetSchema,
+    // Add other optional fields if included in the prompt output spec
+    // heartRateZoneTarget: z.number().int().nullable(),
+    // perceivedEffortTarget: z.string().nullable(),
+    // components: z.array(z.object({...})).optional()
+});
+
+const planWeekSchema = z.object({
+    weekNumber: z.number().positive().int(),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    phase: z.string().nullable(),
+    totalDistanceMeters: z.number().int(),
+    dailyWorkouts: z.array(dailyWorkoutSchema).min(1), // Must have at least one workout
+});
+
+const planSummarySchema = z.object({
+    durationWeeks: z.number().positive().int(),
+    totalDistanceMeters: z.number().int(),
+    avgWeeklyDistanceMeters: z.number().int(),
+});
+
+const llmPlanResponseSchema = z.object({
+    planSummary: planSummarySchema,
+    weeks: z.array(planWeekSchema).min(1), // Must have at least one week
+});
+// --- End Zod Schema Definition --- 
 
 export class LLMService {
 
@@ -117,10 +160,18 @@ export class LLMService {
         // User Profile Section
         prompt += `\n\n## User Profile:\n`;\
         prompt += `- Experience Level: ${profile?.experienceLevel || 'Not specified'}\\n`;\
-        // TODO: Define how fitness level is represented (e.g., score, recent paces)\
         prompt += `- Current Fitness Level Indicator: ${profile?.fitnessLevel || 'Not specified'}\\n`; \
-        // Include PBs if available and relevant for goal setting
-        // prompt += `- Personal Bests: ${JSON.stringify(profile?.personalBests || {}, null, 2)}\\n`; \
+        if (profile?.personalBests && Array.isArray(profile.personalBests) && profile.personalBests.length > 0) {\
+            prompt += `- Personal Bests:\\n`;\
+            profile.personalBests.forEach((pb: any) => {\
+                // Format PB nicely, converting meters/seconds if needed
+                const distanceKm = pb.distanceMeters ? (pb.distanceMeters / 1000).toFixed(1) + "km" : "Unknown distance";
+                const timeMin = pb.timeSeconds ? Math.floor(pb.timeSeconds / 60) : null;
+                const timeSec = pb.timeSeconds ? (pb.timeSeconds % 60).toString().padStart(2, '0') : null;
+                const timeFormatted = timeMin !== null && timeSec !== null ? `${timeMin}:${timeSec}` : "N/A";
+                prompt += `  - ${distanceKm}: ${timeFormatted} (Achieved: ${pb.dateAchieved || 'N/A'})\\n`;\
+            });\
+        } else {\n           // prompt += `- Personal Bests: None provided or N/A\\n`; \n        }\
         
         // Goal Section
         prompt += `\\n## Training Goal:\\n`;\
@@ -195,7 +246,7 @@ export class LLMService {
         prompt += `  ]\n`;\
         prompt += `}\n`;\
 
-        console.log("Generated LLM Prompt (using enhanced summary):\n", prompt); 
+        console.log("Generated LLM Prompt (with PBs):\n", prompt); 
         return prompt;
     }
 
@@ -215,20 +266,23 @@ export class LLMService {
         }
 
         try {
-            const parsed = JSON.parse(potentialJson);
+            const parsedJson = JSON.parse(potentialJson);
             
-            // Basic validation: Check if it has the top-level keys we expect
-            if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.weeks)) {
-                 console.error("Parsed JSON missing expected structure (e.g., 'weeks' array).", parsed);
-                throw new Error("LLM response structure invalid after parsing.");
+            // --- Validate JSON against Zod schema --- 
+            const validationResult = llmPlanResponseSchema.safeParse(parsedJson);
+            if (!validationResult.success) {
+                 console.error("LLM response failed Zod validation:", validationResult.error.errors);
+                 // Log the structure that failed validation
+                 console.error("Invalid LLM response structure:", JSON.stringify(parsedJson, null, 2));
+                 throw new Error(`LLM response structure invalid: ${validationResult.error.message}`);
             }
+            // --- End Zod Validation --- 
             
-            console.log("Successfully parsed LLM response as JSON.");
-            return parsed;
+            console.log("Successfully parsed and validated LLM response.");
+            return validationResult.data; // Return the validated data
 
         } catch (error: any) {
-            console.error("Failed to parse LLM response as JSON:", error.message);
-            // Log a snippet of the response for debugging without logging potentially huge strings
+            console.error("Failed to parse or validate LLM response:", error.message);
             const snippet = potentialJson.substring(0, 500) + (potentialJson.length > 500 ? "..." : "");
             console.error("Raw LLM response snippet for parsing error:", snippet); 
             throw new Error("LLM response was not valid JSON or had incorrect structure.");
@@ -250,8 +304,18 @@ export class LLMService {
         prompt += `\n\n## Current Plan Context:\n`;
         prompt += `- Plan Goal: ${JSON.stringify(plan?.goal) || 'N/A'}`;
         prompt += `\n- Plan Status: ${plan?.status || 'N/A'}`;
-        // TODO: Add more relevant plan context (e.g., current week number, upcoming workouts)
-        // prompt += `\n- Current Week Summary: ...`;
+
+        // --- Add Current/Upcoming Week Context --- 
+        // TODO: Fetch actual week/workout data in TrainingService and pass it here
+        // This requires the TrainingPlan include relation for PlanWeek/Workout
+        const currentWeekContext = plan?.currentWeekData; // Assuming this structure is passed in context
+        if (currentWeekContext) {
+            prompt += `\n- Current Week (${currentWeekContext.startDate} to ${currentWeekContext.endDate}):`;
+            currentWeekContext.workouts?.forEach((wo: any) => {
+                 prompt += `\n  - ${wo.date}: ${wo.workoutType} - ${wo.description} (${wo.distanceMeters ? wo.distanceMeters + "m" : wo.durationSeconds + "s"})`;
+            });
+        }
+        // --- End Week Context --- 
 
         // Instructions
         prompt += `\n\n## Instructions:\n`;
