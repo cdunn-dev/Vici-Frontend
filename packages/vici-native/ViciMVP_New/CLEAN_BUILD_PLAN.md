@@ -50,10 +50,12 @@ Now that we've successfully cleaned up the project structure and have a stable b
 
 2. **Enhance TrainingPlanView Implementation**
    - [x] Connect TrainingPlanViewModel to real TrainingService ✅
+   - [x] Run a build test to verify changes ✅
+   - [x] Launch the app in the simulator with updated ViewModel ✅
    - [ ] Test that workouts load from the API properly
+   - [ ] Add logging/debugging to verify API connectivity
    - [ ] Implement weekly workout display
    - [ ] Add today's workout detail view
-   - [ ] Connect to real API data services
 
 3. **Documentation & Architecture**
    - [x] Created LESSONS_LEARNED.md document for reference
@@ -65,8 +67,10 @@ Now that we've successfully cleaned up the project structure and have a stable b
 
 1. **Finalize TrainingPlanView implementation**
    - [x] Update TrainingPlanViewModel to use real data ✅
-   - [ ] Run a build test to verify changes
-   - [ ] Test the updated view in the simulator
+   - [x] Run a build test to verify changes ✅
+   - [x] Test the updated view in the simulator ✅
+   - [ ] Add logging to debug API connectivity
+   - [ ] Configure and verify backend API access
    - [ ] Debug any issues with API connectivity
 
 2. **Move to other views**
@@ -77,7 +81,8 @@ Now that we've successfully cleaned up the project structure and have a stable b
 3. **Commit changes with clean project state**
    - [x] Commit all current changes with appropriate message ✅
    - [x] Create branch for TrainingPlanView enhancements ✅
-   - [ ] Commit TrainingPlanViewModel updates
+   - [x] Commit TrainingPlanViewModel updates ✅
+   - [ ] Push branch to remote repository
 
 ## Dependency Map (Updated)
 
@@ -108,7 +113,7 @@ This map documents the key interconnected components to ensure we address all de
 - [x] Confirm `AuthViewModel` can be instantiated
 - [x] Test that imports work correctly in a sample file
 
-### Checkpoint 2: Core Functionality Testing ⚠️
+### Checkpoint 2: Core Functionality Testing ✅
 - [x] Verify app builds with file removal testing
 - [x] Verify app builds with no errors ✅
 - [x] Delete FixedFiles directory and verify build still succeeds ✅
@@ -125,6 +130,7 @@ This map documents the key interconnected components to ensure we address all de
 
 ### Checkpoint 4: Real API Integration ⚠️
 - [x] Connect TrainingPlanViewModel to real TrainingService ✅
+- [x] Verify builds succeed with real API connections ✅ 
 - [ ] Test that API requests function correctly
 - [ ] Verify data flows correctly from API to views
 - [ ] Handle loading states and error scenarios
