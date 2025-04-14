@@ -235,14 +235,11 @@ struct ActivityRow: View {
             Spacer()
             
             VStack(alignment: .trailing) {
-                if let distance = activity.distance {
-                    Text("\(String(format: "%.1f", distance/1000)) km")
-                        .font(.subheadline)
-                }
-                if let duration = activity.duration {
-                    Text(duration.formatted())
-                        .font(.caption)
-                }
+                Text("\(String(format: "%.1f", activity.distance/1000)) km")
+                    .font(.subheadline)
+                
+                Text(activity.duration.formatted())
+                    .font(.caption)
             }
         }
         .padding(.vertical, 5)

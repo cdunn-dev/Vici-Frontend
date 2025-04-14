@@ -4,40 +4,50 @@ import SwiftUI
 class UserAuthentication: ObservableObject {
     @Published var isAuthenticated = false
     @Published var currentUser: User?
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    
+    let authService = AuthenticationService()
+    
+    init() {
+        // Set up observers for the auth service
+        authService.$isAuthenticated
+            .assign(to: &$isAuthenticated)
+        
+        authService.$currentUser
+            .assign(to: &$currentUser)
+            
+        authService.$isLoading
+            .assign(to: &$isLoading)
+            
+        authService.$errorMessage
+            .assign(to: &$errorMessage)
+    }
     
     func login(email: String, password: String) {
-        // In a real app, this would validate credentials with a backend
-        // For the MVP, we'll just simulate success
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.isAuthenticated = true
-            self.currentUser = User.current
-        }
+        authService.login(email: email, password: password)
     }
     
     func register(email: String, password: String, name: String = "") {
-        // In a real app, this would register a new user with a backend
-        // For the MVP, we'll just simulate success
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.isAuthenticated = true
-            self.currentUser = User.current
-        }
+        authService.register(email: email, password: password, name: name)
     }
     
     func logout() {
-        isAuthenticated = false
-        currentUser = nil
+        authService.logout()
     }
 }
 
 @main
 struct ViciMVPApp: App {
     @StateObject private var userAuth = UserAuthentication()
+    @StateObject private var trainingPlanService = TrainingPlanService()
     
     var body: some Scene {
         WindowGroup {
             if userAuth.isAuthenticated {
                 MainTabView()
                     .environmentObject(userAuth)
+                    .environmentObject(trainingPlanService)
             } else {
                 AuthenticationView()
                     .environmentObject(userAuth)
