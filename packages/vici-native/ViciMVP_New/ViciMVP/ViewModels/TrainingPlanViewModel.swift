@@ -1,7 +1,10 @@
 import Foundation
 import Combine
 
+/// ViewModel for handling training plan data and interactions.
+/// Connects TrainingPlanView with backend services.
 class TrainingPlanViewModel: ObservableObject {
+    // MARK: - Published Properties
     @Published var activePlan: TrainingPlan?
     @Published var workouts: [Workout] = []
     @Published var todaysWorkout: Workout?
@@ -10,188 +13,165 @@ class TrainingPlanViewModel: ObservableObject {
     @Published var showCreatePlan = false
     @Published var showEditPlan = false
     
-    private var trainingService: TrainingService
+    // MARK: - Private Properties
+    private let trainingService: TrainingService
     private var cancellables = Set<AnyCancellable>()
     
-    init(trainingService: TrainingService = TrainingService.shared) {
+    // MARK: - Initialization
+    
+    /// Initialize with a training service and optionally preview data
+    init(trainingService: TrainingService = .shared, usePreviewData: Bool = false) {
         self.trainingService = trainingService
         
-        // Load data on init
-        loadActivePlan()
+        // Use preview data if requested or if in SwiftUI previews
+        if usePreviewData || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            self.activePlan = TrainingPlan.samplePlan
+            self.workouts = Workout.previewWeek
+            self.todaysWorkout = Workout.previewTodaysWorkout
+        }
     }
     
-    /// Loads the active training plan for the current user
+    // MARK: - Public Methods
+    
+    /// Load the active training plan from the backend
     func loadActivePlan() {
         isLoading = true
         errorMessage = nil
         
-        Task {
-            do {
-                let plan = try await trainingService.getActivePlan()
-                
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.activePlan = plan
-                    self.isLoading = false
-                    
-                    // If we have a plan, load its workouts
-                    if let planId = plan?.id {
-                        self.loadWorkouts(for: planId)
-                    }
-                    
-                    // Also load today's workout
-                    self.loadTodaysWorkout()
+        trainingService.getTrainingPlans()
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case .failure(let error) = completion {
+                    self?.errorMessage = error.localizedDescription
                 }
-            } catch {
-                DispatchQueue.main.async { [weak self] in
-                    self?.isLoading = false
-                    self?.errorMessage = "Failed to load training plan: \(error.localizedDescription)"
-                    print("Error loading plan: \(error)")
+            }, receiveValue: { [weak self] plans in
+                guard let self = self else { return }
+                // Find the active plan
+                if let activePlan = plans.first(where: { $0.isActive }) {
+                    self.activePlan = activePlan
+                    self.loadWorkouts(for: activePlan.id)
+                } else {
+                    // No active plan found
+                    self.activePlan = nil
+                    self.workouts = []
+                    self.todaysWorkout = nil
                 }
-            }
-        }
+            })
+            .store(in: &cancellables)
     }
     
-    /// Loads workouts for a specific plan
+    /// Load workouts for a specific plan ID
     func loadWorkouts(for planId: String) {
         isLoading = true
+        errorMessage = nil
         
-        Task {
-            do {
-                let fetchedWorkouts = try await trainingService.getWorkouts(planId: planId)
-                
-                DispatchQueue.main.async { [weak self] in
-                    self?.workouts = fetchedWorkouts
-                    self?.isLoading = false
+        trainingService.getWorkouts(planId: planId)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case .failure(let error) = completion {
+                    self?.errorMessage = error.localizedDescription
                 }
-            } catch {
-                DispatchQueue.main.async { [weak self] in
-                    self?.isLoading = false
-                    self?.errorMessage = "Failed to load workouts: \(error.localizedDescription)"
-                    print("Error loading workouts: \(error)")
-                }
-            }
-        }
+            }, receiveValue: { [weak self] workouts in
+                guard let self = self else { return }
+                self.workouts = workouts
+                self.updateTodaysWorkout()
+            })
+            .store(in: &cancellables)
     }
     
-    /// Loads today's workout
-    func loadTodaysWorkout() {
-        Task {
-            do {
-                let workout = try await trainingService.getTodaysWorkout()
-                
-                DispatchQueue.main.async { [weak self] in
-                    self?.todaysWorkout = workout
-                }
-            } catch {
-                print("Error loading today's workout: \(error)")
-                // We don't show error for this as it's not critical
-            }
-        }
-    }
-    
-    /// Marks a workout as completed
+    /// Mark a workout as completed
     func completeWorkout(id: String, notes: String? = nil) async {
+        isLoading = true
+        errorMessage = nil
+        
         do {
-            let planId = activePlan?.id
-            try await trainingService.completeWorkout(id: id, completionDate: Date(), notes: notes, planId: planId)
+            let publisher = trainingService.completeWorkout(id: id, notes: notes)
+            let workout = try await publisher.async()
             
-            // Refresh the workouts list
-            if let planId = planId {
-                loadWorkouts(for: planId)
+            // Update in our local lists
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.isLoading = false
+                
+                // Update the workout in our list
+                if let index = self.workouts.firstIndex(where: { $0.id == id }) {
+                    self.workouts[index] = workout
+                }
+                
+                // Update today's workout if it's the same one
+                if self.todaysWorkout?.id == id {
+                    self.todaysWorkout = workout
+                }
             }
-            
-            // Also refresh today's workout if needed
-            loadTodaysWorkout()
         } catch {
             DispatchQueue.main.async { [weak self] in
-                self?.errorMessage = "Failed to complete workout: \(error.localizedDescription)"
-                print("Error completing workout: \(error)")
+                self?.isLoading = false
+                self?.errorMessage = error.localizedDescription
             }
         }
-    }
-    
-    /// Creates a plan preview based on user preferences
-    func createPlanPreview(withRequest request: [String: Any], completion: @escaping (Result<TrainingPlan, Error>) -> Void) {
-        Task {
-            do {
-                let plan = try await trainingService.createPlanPreview(request)
-                DispatchQueue.main.async {
-                    completion(.success(plan))
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
-            }
-        }
-    }
-    
-    /// Approves a plan preview
-    func approvePlan(id: String, completion: @escaping (Bool) -> Void) {
-        Task {
-            do {
-                try await trainingService.approvePlan(id)
-                
-                // Refresh active plan
-                let plan = try await trainingService.getActivePlan()
-                
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.activePlan = plan
-                    if let planId = plan?.id {
-                        self.loadWorkouts(for: planId)
-                    }
-                    completion(true)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("Error approving plan: \(error)")
-                    completion(false)
-                }
-            }
-        }
-    }
-    
-    /// Creates a new training plan
-    func createTrainingPlan(name: String, description: String?, goal: String?, startDate: Date, endDate: Date) async throws -> TrainingPlan {
-        // This is a placeholder - actual implementation would call the API
-        let plan = try await trainingService.createTrainingPlan(name: name, description: description, goal: goal, startDate: startDate, endDate: endDate)
-        
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.activePlan = plan
-            if let planId = plan.id {
-                self.loadWorkouts(for: planId)
-            }
-        }
-        
-        return plan
     }
     
     // MARK: - Helper Methods
+    
+    /// Update today's workout based on current date
+    private func updateTodaysWorkout() {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        todaysWorkout = workouts.first(where: { workout in
+            calendar.isDate(calendar.startOfDay(for: workout.scheduledDate), 
+                           inSameDayAs: calendar.startOfDay(for: today))
+        })
+    }
+    
+    // MARK: - Computed Properties
     
     /// Get workouts for the current week
     var thisWeekWorkouts: [Workout] {
         let calendar = Calendar.current
         let today = Date()
-        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
-        let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek)!
         
-        return workouts.filter { workout in
-            guard let date = workout.scheduledDate else { return false }
-            return date >= startOfWeek && date < endOfWeek
+        // Get start and end of week
+        guard let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) else {
+            return workouts
         }
-    }
-    
-    /// Get today's workout from the workouts array
-    var todayWorkoutFromList: Workout? {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
         
-        return workouts.first { workout in
-            guard let date = workout.scheduledDate else { return false }
-            return calendar.isDate(calendar.startOfDay(for: date), inSameDayAs: today)
+        guard let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
+            return workouts
+        }
+        
+        // Filter workouts to current week
+        return workouts.filter { workout in
+            let date = workout.scheduledDate
+            return date >= weekStart && date < weekEnd
+        }.sorted { $0.scheduledDate < $1.scheduledDate }
+    }
+}
+
+// MARK: - Publisher Extension
+extension Publisher {
+    /// Convert a publisher to an async function
+    func async() async throws -> Output {
+        try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            
+            cancellable = self.sink(
+                receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        break
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                    cancellable?.cancel()
+                },
+                receiveValue: { value in
+                    continuation.resume(returning: value)
+                    cancellable?.cancel()
+                }
+            )
         }
     }
 } 

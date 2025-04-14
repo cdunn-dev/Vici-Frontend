@@ -22,6 +22,7 @@ This document outlines the comprehensive plan to fix all build issues in the Vic
 
 **BUILD STATUS: SUCCESSFUL** ✅
 **APP LAUNCHES SUCCESSFULLY** ✅
+**REAL DATA CONNECTIONS: IN PROGRESS** ⚠️
 - The app now builds successfully with no errors
 - App launches and runs on iOS simulators
 - AuthViewModel is properly integrated and accessible to all components
@@ -32,6 +33,7 @@ This document outlines the comprehensive plan to fix all build issues in the Vic
   - ✅ Tested removal of all fixed files with a build after each
   - ✅ Successfully removed references from project.pbxproj via Xcode
   - ✅ Deleted FixedFiles directory and verified build still succeeds
+- ✅ TrainingPlanViewModel now connects to real data services
 
 ## Next Steps: Real Implementation
 
@@ -43,11 +45,12 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Document findings regarding project file references
    - [x] Remove FixedFiles directory and confirm build success ✅
    - [x] Run the app on simulator to verify it launches ✅
-   - [ ] Test tab navigation and basic UI interaction
+   - [x] Test tab navigation and basic UI interaction ✅
    - [ ] Confirm AuthViewModel properly manages authentication state
 
 2. **Enhance TrainingPlanView Implementation**
-   - [ ] Connect TrainingPlanView to real TrainingPlanViewModel
+   - [x] Connect TrainingPlanViewModel to real TrainingService ✅
+   - [ ] Test that workouts load from the API properly
    - [ ] Implement weekly workout display
    - [ ] Add today's workout detail view
    - [ ] Connect to real API data services
@@ -60,18 +63,21 @@ Now that we've successfully cleaned up the project structure and have a stable b
 
 ### Immediate Next Actions
 
-1. **Finalize simulator testing**
-   - [x] Build and run on simulator ✅  
-   - [ ] Test each tab and major user flow
-   - [ ] Document any issues found
+1. **Finalize TrainingPlanView implementation**
+   - [x] Update TrainingPlanViewModel to use real data ✅
+   - [ ] Run a build test to verify changes
+   - [ ] Test the updated view in the simulator
+   - [ ] Debug any issues with API connectivity
 
-2. **Update TrainingPlanView to use real data models**
-   - [ ] Connect to TrainingPlanViewModel
-   - [ ] Start implementing real UI components
+2. **Move to other views**
+   - [ ] Update AskViciView to use real data models
+   - [ ] Update ProfileView to use real user data
+   - [ ] Ensure Strava connection flow uses real API
 
 3. **Commit changes with clean project state**
    - [x] Commit all current changes with appropriate message ✅
-   - [ ] Create branch for TrainingPlanView enhancements
+   - [x] Create branch for TrainingPlanView enhancements ✅
+   - [ ] Commit TrainingPlanViewModel updates
 
 ## Dependency Map (Updated)
 
@@ -87,10 +93,11 @@ This map documents the key interconnected components to ensure we address all de
 ### ViewModels
 - `AuthViewModel`: Used by `ViciMVPApp`, `MainTabView`, `AuthenticationView`, `ProfileView`
 - `TrainingPlanViewModel`: Used by `TrainingPlanView`, potentially other views
+  - ✅ Now connects to TrainingService for real API data
 
 ### Services
 - `AuthService`: Used by `AuthViewModel`
-- `TrainingService`: Used by `TrainingPlanViewModel`
+- `TrainingService`: Used by `TrainingPlanViewModel` ✅
 - `StravaService`: Used by connection flows
 - `APIClient`: Used by all services
 
@@ -106,7 +113,7 @@ This map documents the key interconnected components to ensure we address all de
 - [x] Verify app builds with no errors ✅
 - [x] Delete FixedFiles directory and verify build still succeeds ✅
 - [x] Verify app launches correctly on simulator ✅
-- [ ] Confirm navigation between main tabs works
+- [x] Confirm navigation between main tabs works
 - [ ] Test authentication flow
 - [ ] Verify profile data displays correctly
 
@@ -116,8 +123,15 @@ This map documents the key interconnected components to ensure we address all de
 - [x] Delete FixedFiles directory and verify build
 - [x] Commit changes with clean project state
 
-### Checkpoint 4: Full MVP Functionality
-- [ ] Connect to real API services
+### Checkpoint 4: Real API Integration ⚠️
+- [x] Connect TrainingPlanViewModel to real TrainingService ✅
+- [ ] Test that API requests function correctly
+- [ ] Verify data flows correctly from API to views
+- [ ] Handle loading states and error scenarios
+- [ ] Implement caching for offline support
+
+### Checkpoint 5: Full MVP Functionality
+- [ ] Connect all services to real APIs
 - [ ] Test all user flows with real data
 - [ ] Verify error handling works correctly
 - [ ] Confirm UI displays correctly on all device sizes
@@ -125,7 +139,7 @@ This map documents the key interconnected components to ensure we address all de
 ## Timeline for Completion
 
 1. **Week 1 (Current)**: ✅ Complete core testing and delete FixedFiles directory
-2. **Week 2**: Enhance TrainingPlanView and implement real data connections
+2. **Week 2 (Current)**: ⚠️ Connect views to real data services, starting with TrainingPlanView
 3. **Week 3**: Complete error handling and final cleanup
 4. **Week 4**: API integration testing and documentation updates
 
