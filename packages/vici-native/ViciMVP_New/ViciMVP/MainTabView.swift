@@ -1,19 +1,21 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    
     var body: some View {
         TabView {
-            Text("Home")
-                .tabItem {
-                    Label("Home", systemImage: "house")
-                }
-            
-            Text("Training")
+            TrainingPlanView()
                 .tabItem {
                     Label("Training", systemImage: "figure.run")
                 }
             
-            Text("Profile")
+            AskViciView()
+                .tabItem {
+                    Label("Ask Vici", systemImage: "message.fill")
+                }
+            
+            ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person")
                 }

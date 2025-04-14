@@ -115,28 +115,28 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
 - [x] Ask Vici interface (Using real LLM)
   - [x] Basic question interface
   - [x] Plan adjustment requests
-- [ ] Profile/Settings screens (Essential settings only)
+- [x] Profile/Settings screens (Essential settings only)
 - [/] iOS-specific optimizations:
-  - [ ] SwiftUI performance tuning
+  - [/] SwiftUI performance tuning
   - [ ] Push Notification setup
   - [x] Secure credential storage (Implemented KeychainService)
 
 ### Phase 5: Testing & Validation (iOS MVP Scope)
 
-- [ ] iOS Simulator Testing:
-  - [ ] Test across multiple iPhone models
-  - [ ] Verify responsive layouts
-  - [ ] Test offline/poor connectivity scenarios
+- [/] iOS Simulator Testing:
+  - [/] Test across multiple iPhone models
+  - [/] Verify responsive layouts
+  - [/] Test offline/poor connectivity scenarios
 - [/] Integration Testing:
   - [x] Strava API integration tests
   - [x] LLM integration tests
-  - [ ] End-to-end user flows
+  - [/] End-to-end user flows
 - [ ] User Acceptance Testing (UAT):
   - [ ] Internal team testing of real features
   - [ ] Small focus group testing
-- [ ] Performance Testing:
-  - [ ] Network request optimization
-  - [ ] LLM response time optimization
+- [/] Performance Testing:
+  - [/] Network request optimization
+  - [/] LLM response time optimization
 
 ### Phase 6: Documentation & Launch Prep (iOS MVP)
 
@@ -145,21 +145,21 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
   - [x] API documentation for essential endpoints
   - [x] LLM prompt documentation
   - [x] Authentication integration documentation
-- [ ] App Store Preparation:
-  - [ ] App Store screenshots & descriptions
-  - [ ] Privacy policy updates
-  - [ ] Terms of service updates
-- [ ] Backend Deployment:
-  - [ ] Staging environment setup
+- [/] App Store Preparation:
+  - [/] App Store screenshots & descriptions
+  - [/] Privacy policy updates
+  - [/] Terms of service updates
+- [/] Backend Deployment:
+  - [/] Staging environment setup
   - [ ] Production environment setup
-  - [ ] Database migration scripts
-- [ ] CI/CD Pipeline:
-  - [ ] iOS build automation
-  - [ ] Backend deployment automation
-- [ ] Launch Monitoring Setup:
-  - [ ] Error tracking implementation
-  - [ ] Basic analytics instrumentation
-  - [ ] Performance monitoring
+  - [/] Database migration scripts
+- [/] CI/CD Pipeline:
+  - [/] iOS build automation
+  - [/] Backend deployment automation
+- [/] Launch Monitoring Setup:
+  - [/] Error tracking implementation
+  - [/] Basic analytics instrumentation
+  - [/] Performance monitoring
 - [ ] Define Launch Go/No-Go criteria
 
 ---

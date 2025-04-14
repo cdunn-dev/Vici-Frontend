@@ -159,6 +159,22 @@ class AuthService {
         keychain.set(newToken, forKey: tokenKey)
         return newToken
     }
+    
+    /// Disconnect Strava account
+    func disconnectStrava() async throws {
+        guard let token = keychain.get(tokenKey) else {
+            throw APIError.unauthorized
+        }
+        
+        // Call the API to disconnect Strava
+        let _: [String: Any] = try await apiClient.request(
+            endpoint: "/integrations/strava/disconnect",
+            method: .post,
+            headers: ["Authorization": "Bearer \(token)"]
+        )
+        
+        // No need to parse response data as we just care about success/failure
+    }
 }
 
 // MARK: - KeychainService for secure storage

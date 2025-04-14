@@ -2,22 +2,26 @@ import SwiftUI
 
 @main
 struct ViciMVPApp: App {
+    // Use the comprehensive AuthViewModel from ViewModels/AuthViewModel.swift
     @StateObject private var authViewModel = AuthViewModel()
     
     var body: some Scene {
         WindowGroup {
-            if authViewModel.isAuthenticated {
+            if authViewModel.isLoggedIn {
                 MainTabView()
                     .environmentObject(authViewModel)
             } else {
-                AuthView()
+                AuthenticationView()
                     .environmentObject(authViewModel)
             }
         }
     }
 }
 
-class AuthViewModel: ObservableObject {
+// MARK: - Redundant AuthViewModel 
+// NOTE: This simple implementation is replaced by the comprehensive AuthViewModel in ViewModels/AuthViewModel.swift
+// This code should be removed but is kept temporarily to prevent breaking changes elsewhere in the codebase
+class _DeprecatedAuthViewModel: ObservableObject {
     @Published var isAuthenticated: Bool = false
     @Published var currentUser: User?
     private let authService = AuthService.shared
