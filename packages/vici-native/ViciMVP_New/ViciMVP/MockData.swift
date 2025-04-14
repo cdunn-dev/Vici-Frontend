@@ -1,3 +1,19 @@
+// *** DEPRECATION NOTICE ***
+// This file contains mock data implementations that are being phased out in favor of real API integrations.
+// The entire file should be removed once all references to mock data are updated to use the real models:
+// - Use Workout instead of MockWorkout
+// - Use TrainingPlan instead of MockTrainingPlan
+// - Use Activity instead of MockActivity
+//
+// As indicated in the MVP Project Tracker, one of the goals is to:
+// "Remove unnecessary mock implementations"
+//
+// This file is causing compilation issues due to ambiguous type references between
+// mock models and real models with the same base name.
+// 
+// DO NOT add new references to this file. Instead, update code to use real models and API calls.
+// *** END DEPRECATION NOTICE ***
+
 import Foundation
 
 // MARK: - Mock Data for Vici MVP App
@@ -84,7 +100,7 @@ struct PersonalBest: Identifiable, Codable {
 }
 
 // Training Plan model
-struct TrainingPlan: Identifiable, Codable {
+struct MockTrainingPlan: Identifiable, Codable {
     let id: String
     let name: String
     let description: String
@@ -96,13 +112,13 @@ struct TrainingPlan: Identifiable, Codable {
     let endDate: Date
     let currentWeek: Int
     let totalWeeks: Int
-    let currentWeekWorkouts: [Workout]
+    let currentWeekWorkouts: [MockWorkout]
     let currentWeekDistance: Double // in meters
     let notes: String?
     let objective: String?
     
     static let examples = [
-        TrainingPlan(
+        MockTrainingPlan(
             id: "plan1",
             name: "10K Training Plan",
             description: "A 10K training plan for beginners to improve endurance",
@@ -114,12 +130,12 @@ struct TrainingPlan: Identifiable, Codable {
             endDate: Date().addingTimeInterval(30*24*60*60),
             currentWeek: 5,
             totalWeeks: 12,
-            currentWeekWorkouts: Workout.exampleWeek,
+            currentWeekWorkouts: MockWorkout.exampleWeek,
             currentWeekDistance: 30000,
             notes: "Focus on building your base mileage this week. The tempo run on Friday is key - really try to dial in that marathon pace feeling.",
             objective: "Complete a 10K race in under 60 minutes"
         ),
-        TrainingPlan(
+        MockTrainingPlan(
             id: "plan2",
             name: "Half Marathon Plan",
             description: "A half marathon plan for intermediate runners",
@@ -131,14 +147,14 @@ struct TrainingPlan: Identifiable, Codable {
             endDate: Date().addingTimeInterval(60*24*60*60),
             currentWeek: 5,
             totalWeeks: 12,
-            currentWeekWorkouts: Workout.exampleWeek,
+            currentWeekWorkouts: MockWorkout.exampleWeek,
             currentWeekDistance: 45000,
             notes: "This is a peak week with higher volume. Make sure to focus on recovery after your workouts.",
             objective: "Complete a half marathon in under 2 hours"
         )
     ]
     
-    static var mockCurrentPlan: TrainingPlan {
+    static var mockCurrentPlan: MockTrainingPlan {
         return examples[1]
     }
 }
@@ -255,101 +271,90 @@ enum TrainingPhase: String {
 }
 
 // Workout model
-struct Workout: Identifiable, Codable {
+struct MockWorkout: Identifiable, Codable {
     let id: String
-    let title: String
+    let name: String
     let description: String
-    let workoutType: WorkoutType
-    var status: WorkoutStatus
     let date: Date
-    let plannedDistance: Double // in meters
-    let estimatedDuration: TimeInterval // in seconds
-    let intensityLevel: IntensityLevel
-    var completedActivity: Activity?
+    let type: WorkoutType
+    let targetDistance: Double? // In kilometers
+    let targetDuration: TimeInterval? // In seconds
+    let targetPace: TimeInterval? // In seconds per kilometer
+    let completed: Bool
+    let status: WorkoutStatus
     
-    // Mock data
-    static let exampleWeek: [Workout] {
-        let calendar = Calendar.current
+    static var exampleWeek: [MockWorkout] {
         let today = Date()
-        let startOfToday = calendar.startOfDay(for: today)
-        
-        // Create date components for this week
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
-        let weekDates = (0...6).map { day in
-            calendar.date(byAdding: .day, value: day, to: monday)!
-        }
+        let calendar = Calendar.current
+        let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
         
         return [
-            // Monday - Easy Run
-            Workout(
-                id: "w1",
-                title: "Easy Recovery Run",
-                description: "Start the week with a gentle recovery run to flush out any fatigue from the weekend.",
-                workoutType: .easy,
-                status: calendar.isDateInToday(weekDates[0]) ? .scheduled : (weekDates[0] < today ? .completed : .scheduled),
-                date: weekDates[0],
-                plannedDistance: 5000, // 5km
-                estimatedDuration: 1800, // 30min
-                intensityLevel: .low,
-                completedActivity: nil
+            MockWorkout(
+                id: "1",
+                name: "Easy Run",
+                description: "Easy aerobic run at conversational pace",
+                date: calendar.date(byAdding: .day, value: 0, to: weekStartDate)!,
+                type: .easy,
+                targetDistance: 8.0,
+                targetDuration: 48 * 60,
+                targetPace: 6 * 60,
+                completed: true,
+                status: .completed
             ),
-            
-            // Wednesday - Intervals
-            Workout(
-                id: "w2",
-                title: "Interval Workout",
-                description: "6 x 400m repeats with 200m recovery jogs. Target pace 10-15 sec/km faster than 5K pace.",
-                workoutType: .interval,
-                status: calendar.isDateInToday(weekDates[2]) ? .scheduled : (weekDates[2] < today ? .completed : .scheduled),
-                date: weekDates[2],
-                plannedDistance: 7000, // 7km with warmup/cooldown
-                estimatedDuration: 2400, // 40min
-                intensityLevel: .high,
-                completedActivity: nil
+            MockWorkout(
+                id: "2",
+                name: "Interval Training",
+                description: "6 x 400m repeats with 200m recovery jogs",
+                date: calendar.date(byAdding: .day, value: 2, to: weekStartDate)!,
+                type: .interval,
+                targetDistance: 7.0,
+                targetDuration: 2400,
+                targetPace: 240,
+                completed: false,
+                status: .scheduled
             ),
-            
-            // Friday - Tempo Run
-            Workout(
-                id: "w3",
-                title: "Tempo Run",
+            MockWorkout(
+                id: "3",
+                name: "Tempo Run",
                 description: "Warm up 10min, 20min at marathon pace, 10min cooldown.",
-                workoutType: .tempo,
-                status: calendar.isDateInToday(weekDates[4]) ? .scheduled : (weekDates[4] < today ? .completed : .scheduled),
-                date: weekDates[4],
-                plannedDistance: 8000, // 8km
-                estimatedDuration: 2700, // 45min
-                intensityLevel: .moderate,
-                completedActivity: nil
+                date: calendar.date(byAdding: .day, value: 4, to: weekStartDate)!,
+                type: .tempo,
+                targetDistance: 8.0,
+                targetDuration: 2700,
+                targetPace: 337.5,
+                completed: false,
+                status: .scheduled
             ),
-            
-            // Saturday - Easy Run
-            Workout(
-                id: "w4",
-                title: "Easy Run",
+            MockWorkout(
+                id: "4",
+                name: "Easy Run",
                 description: "Easy effort run with focus on good form. Keep the effort conversational.",
-                workoutType: .easy,
-                status: calendar.isDateInToday(weekDates[5]) ? .scheduled : (weekDates[5] < today ? .completed : .scheduled),
-                date: weekDates[5],
-                plannedDistance: 6000, // 6km
-                estimatedDuration: 2100, // 35min
-                intensityLevel: .low,
-                completedActivity: nil
+                date: calendar.date(byAdding: .day, value: 5, to: weekStartDate)!,
+                type: .easy,
+                targetDistance: 6.0,
+                targetDuration: 2100,
+                targetPace: 350,
+                completed: false,
+                status: .scheduled
             ),
-            
-            // Sunday - Long Run
-            Workout(
-                id: "w5",
-                title: "Long Run",
-                description: "Weekly long run to build endurance. Keep the pace easy and focus on time on feet.",
-                workoutType: .longRun,
-                status: calendar.isDateInToday(weekDates[6]) ? .scheduled : (weekDates[6] < today ? .completed : .scheduled),
-                date: weekDates[6],
-                plannedDistance: 16000, // 16km
-                estimatedDuration: 5400, // 90min
-                intensityLevel: .moderate,
-                completedActivity: nil
+            MockWorkout(
+                id: "5",
+                name: "Long Run",
+                description: "Build endurance with steady pace throughout",
+                date: calendar.date(byAdding: .day, value: 6, to: weekStartDate)!,
+                type: .longRun,
+                targetDistance: 16.0,
+                targetDuration: 5400,
+                targetPace: 337.5,
+                completed: false,
+                status: .scheduled
             )
         ]
+    }
+    
+    static var todaysWorkout: MockWorkout? {
+        let today = Calendar.current.startOfDay(for: Date())
+        return exampleWeek.first { Calendar.current.isDate($0.date, inSameDayAs: today) }
     }
 }
 
@@ -431,63 +436,39 @@ struct PlanCompletionStats {
 }
 
 // Activity models (for completed workouts/training log)
-struct Activity: Identifiable, Codable {
+struct MockActivity: Identifiable, Codable {
     let id: String
-    let userId: String
-    let source: ActivitySource
-    let sourceActivityId: String?
-    let startTime: Date
     let name: String
-    let description: String?
-    let distance: Double // meters
-    let movingTimeSeconds: TimeInterval
-    let elapsedTimeSeconds: TimeInterval
-    let averagePaceSecondsPerKm: Double
-    let maxPaceSecondsPerKm: Double?
-    let averageHeartRate: Double?
-    let maxHeartRate: Double?
-    let totalElevationGainMeters: Double?
-    let mapThumbnailUrl: String?
-    let hasPhotos: Bool
-    let photos: [String]?
-    let laps: [ActivityLap]?
-    let isReconciled: Bool
-    let reconciliationType: ReconciliationType?
-    let reconciledWorkoutId: String?
-    let perceivedEffort: Int?
-    let journalEntry: String?
+    let description: String
+    let type: String
+    let date: Date
+    let distance: Double // kilometers
+    let duration: TimeInterval // seconds
+    let pace: TimeInterval // seconds per kilometer
+    let heartRate: Int? // beats per minute
+    let elevationGain: Double? // meters
+    let route: [Coordinate]?
+    let source: String // "manual", "strava", "garmin"
     
     // Computed properties for views
     var title: String {
         return name
     }
     
-    var date: Date {
-        return startTime
-    }
-    
-    var duration: TimeInterval {
-        return movingTimeSeconds
-    }
-    
-    static var mockActivities: [Activity] {
-        return MockActivities.shared.recentActivities
-    }
-    
     var formattedDistance: String {
-        return String(format: "%.2f km", distance / 1000)
+        return String(format: "%.2f km", distance)
     }
     
     var formattedPace: String {
-        let minutes = Int(averagePaceSecondsPerKm) / 60
-        let seconds = Int(averagePaceSecondsPerKm) % 60
+        let minutes = Int(pace) / 60
+        let seconds = Int(pace) % 60
         return String(format: "%d:%02d /km", minutes, seconds)
     }
     
     var formattedDuration: String {
-        let hours = Int(movingTimeSeconds) / 3600
-        let minutes = (Int(movingTimeSeconds) % 3600) / 60
-        let seconds = Int(movingTimeSeconds) % 60
+        let hours = Int(duration) / 3600
+        let minutes = (Int(duration) % 3600) / 60
+        let seconds = Int(duration) % 60
         
         if hours > 0 {
             return String(format: "%d:%02d:%02d", hours, minutes, seconds)
@@ -958,14 +939,14 @@ struct MockData {
 }
 
 // Basic model definitions
-struct User {
+struct MockUser {
     let id: String
     let email: String
     let name: String?
     let profilePictureUrl: String?
 }
 
-struct Workout {
+struct MockWorkout {
     let id: String
     let title: String
     let description: String
@@ -978,7 +959,7 @@ struct Workout {
     let completedActivity: Activity?
 }
 
-struct TrainingPlan {
+struct MockTrainingPlan {
     let id: String
     let name: String
     let description: String
@@ -990,8 +971,18 @@ struct TrainingPlan {
     let endDate: Date
     let currentWeek: Int
     let totalWeeks: Int
-    let currentWeekWorkouts: [Workout]
+    let currentWeekWorkouts: [MockWorkout]
     let currentWeekDistance: Double
     let notes: String?
     let objective: String?
+}
+
+// For mock UI display
+struct UITrainingPlan {
+    let name: String
+    let type: String
+    let startDate: Date
+    let endDate: Date
+    let status: PlanStatus
+    let weeks: [PlanWeek]
 } 

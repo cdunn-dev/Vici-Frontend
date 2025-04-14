@@ -99,7 +99,10 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
 
 - [/] **iOS Native Implementation:**
   - [x] Reorganize ViciMVP structure to focus on key features
-  - [/] Remove unnecessary mock implementations
+  - [/] Remove unnecessary mock implementations:
+    - [x] Created real model preview extensions (Workout+Preview, TrainingPlan+Preview, Activity+Preview, User+Preview)
+    - [x] Created migration guide (MOCK_TO_REAL_MIGRATION.md)
+    - [/] Update view references from mock to real models
   - [x] Implement direct API client for backend services
 - [/] Authentication screens (Connect to real backend)
   - [/] Login/Registration flow (UI exists, connecting to real API)
