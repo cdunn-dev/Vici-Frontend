@@ -710,4 +710,53 @@ export class TrainingController {
       });
     }
   };
+
+  /**
+   * Handle an "Ask Vici" request for a specific plan.
+   */
+  public askVici = async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+      }
+      const userId = req.user.id;
+      const { planId } = req.params;
+      const { query } = req.body; // User's natural language query
+
+      if (!planId) {
+        return res.status(400).json({ success: false, message: 'Plan ID is required' });
+      }
+      if (!query) {
+        return res.status(400).json({ success: false, message: 'Query is required' });
+      }
+
+      // Call the service to handle the request
+      const responseData = await trainingService.handleAskViciRequest({
+        userId,
+        planId,
+        query,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: responseData, // Contains the LLM's response (text or adjustment)
+        message: 'Ask Vici request processed successfully'
+      });
+
+    } catch (error: any) {
+      console.error(`Error handling Ask Vici request for plan ${req.params.planId}:`, error);
+      let statusCode = 500;
+      if (error.message?.includes('not found')) {
+        statusCode = 404;
+      } else if (error.message?.includes('LLM Service not available')) {
+        statusCode = 503;
+      }
+      // Add more specific error handling based on service errors
+      
+      return res.status(statusCode).json({
+        success: false,
+        message: error.message || 'Server error handling Ask Vici request'
+      });
+    }
+  };
 } 

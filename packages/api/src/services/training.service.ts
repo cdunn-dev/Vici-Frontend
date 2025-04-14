@@ -268,5 +268,78 @@ export class TrainingService {
         }
     }
 
+    /**
+     * Handles an "Ask Vici" request by gathering context and calling the LLM service.
+     * @param {object} input - Contains userId, planId, and the user's query.
+     * @returns {Promise<any>} The response from the LLM service.
+     * @throws {Error} If plan/user not found or LLM fails.
+     */
+    async handleAskViciRequest(input: { userId: string; planId: string; query: string }): Promise<any> {
+        const { userId, planId, query } = input;
+
+        if (!llmService.isAvailable()) {
+            throw new Error('LLM Service is not available.');
+        }
+        
+        console.log(`Handling Ask Vici request for user ${userId}, plan ${planId}: "${query}"`);
+
+        // 1. Fetch necessary context: Current plan details, user profile
+        const plan = await prisma.trainingPlan.findUnique({
+            where: { id: planId },
+            // Include relevant parts of the plan for context
+            // include: { PlanWeek: { include: { Workout: true } } }
+            // TODO: Fetch only necessary plan context to keep prompt manageable
+        });
+
+        if (!plan) {
+            throw new Error('Training plan not found.');
+        }
+        if (plan.userId !== userId) {
+            throw new Error('User not authorized for this training plan.');
+        }
+        if (plan.status !== 'Active') {
+             // Maybe allow asking about Preview plans too?
+             // throw new Error('Cannot ask Vici about a non-active plan.');
+             console.warn(`User ${userId} asking Vici about a non-active plan (${plan.status})`);
+        }
+        
+        // Fetch user profile data if needed for the prompt
+        const userProfile = await prisma.user.findUnique({ 
+            where: { id: userId },
+            include: { runnerProfile: true }
+        });
+        // Omit sensitive data like passwordHash if fetching full User
+
+        // 2. Prepare data for LLMService
+        const llmInputData = {
+            query: query,
+            context: {
+                plan: { 
+                    // Selectively include relevant plan data
+                    id: plan.id,
+                    status: plan.status,
+                    goal: plan.goal, 
+                    // TODO: Include summary of current/upcoming week(s)?
+                    // weeks: plan.PlanWeek?.slice(-2) // Example: Last 2 weeks?
+                },
+                profile: {
+                     experienceLevel: userProfile?.runnerProfile?.experienceLevel,
+                     fitnessLevel: userProfile?.runnerProfile?.fitnessLevel, 
+                }
+            }
+        };
+        
+        // 3. Call LLMService
+        console.log(`Calling LLM for Ask Vici request for user ${userId}`);
+        const llmResponse = await llmService.handleAskVici(llmInputData);
+
+        // 4. Process/Return LLM Response
+        // For MVP, we might just return the raw response object from the LLM service.
+        // Future: Could involve parsing structured responses, saving proposed adjustments,
+        // updating conversation history, etc.
+        console.log(`Received Ask Vici response from LLM for user ${userId}`);
+        return llmResponse; 
+    }
+
     // Other training-related methods...
 } 

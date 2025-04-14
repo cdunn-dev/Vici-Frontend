@@ -52,6 +52,13 @@ router.delete('/plans/:id', authenticateJwt, trainingController.deletePlan);
 router.post('/plans/:planId/approve', authenticateJwt, trainingController.approvePlan);
 
 /**
+ * @route POST /api/training/plans/:planId/ask-vici
+ * @desc Send a query or adjustment request to the AI assistant for a specific plan.
+ * @access Private
+ */
+router.post('/plans/:planId/ask-vici', authenticateJwt, trainingController.askVici);
+
+/**
  * Workout Routes
  */
 

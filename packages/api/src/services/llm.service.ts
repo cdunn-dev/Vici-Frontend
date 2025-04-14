@@ -82,15 +82,13 @@ export class LLMService {
      * @returns {Promise<any>} The response (text or structured adjustment proposal).
      */
     async handleAskVici(askRequestData: any): Promise<any> {
-         if (!this.model) {
+        if (!this.model) {
             throw new Error("LLM Service not initialized. Check API Key.");
         }
         
         console.log("Handling Ask Vici request with LLM...", askRequestData);
 
-        // --- TODO: Prompt Engineering for Ask Vici --- 
         const prompt = this.buildAskViciPrompt(askRequestData);
-        // --- End Prompt Engineering ---
         
          try {
             const result = await this.model.generateContent(prompt);
@@ -98,10 +96,8 @@ export class LLMService {
             const text = response.text();
             console.log("Ask Vici LLM Response Text:", text);
             
-            // --- TODO: Response Parsing (might be simple text or structured JSON) --- 
+            // For MVP, just return the text response. Parsing structured adjustments is complex.
             const askViciResponse = this.parseAskViciResponse(text);
-             // --- End Response Parsing ---
-             
             return askViciResponse;
 
         } catch (error) {
@@ -240,16 +236,42 @@ export class LLMService {
     }
     
      private buildAskViciPrompt(data: any): string {
-        // TODO: Construct prompt for Ask Vici
-        // - Context: Current plan, user query, profile
-        // - Task: Answer question OR propose adjustment
-        // - Constraints: Safety, relevance
-        // - Output Format: Text answer or JSON proposal
-        return `User asked: "${data.query}" about their training plan. Provide a helpful response or a proposed adjustment. Context: ${JSON.stringify(data.context)}`; // Placeholder
+        const { query, context } = data;
+        const { plan, profile } = context;
+
+        let prompt = `You are Vici, an expert running coach AI assistant.`;
+        prompt += `\nA user is asking a question or requesting an adjustment regarding their training plan.`;
+        prompt += `\nUser Query: "${query}"`;
+
+        // Provide Context
+        prompt += `\n\n## User Profile Summary:\n`;
+        prompt += `- Experience: ${profile?.experienceLevel || 'N/A'}, Fitness: ${profile?.fitnessLevel || 'N/A'}`;
+        
+        prompt += `\n\n## Current Plan Context:\n`;
+        prompt += `- Plan Goal: ${JSON.stringify(plan?.goal) || 'N/A'}`;
+        prompt += `\n- Plan Status: ${plan?.status || 'N/A'}`;
+        // TODO: Add more relevant plan context (e.g., current week number, upcoming workouts)
+        // prompt += `\n- Current Week Summary: ...`;
+
+        // Instructions
+        prompt += `\n\n## Instructions:\n`;
+        prompt += `- Analyze the user query in the context of their profile and plan.`;
+        prompt += `- If it's a question, provide a clear, concise, and encouraging answer.`;
+        prompt += `- If it's a request for adjustment (e.g., swap days, make easier/harder), analyze its feasibility and safety.`;
+        prompt += `- For MVP: Respond primarily with text. Explain if an adjustment is feasible and what it might entail, but DO NOT output structured plan changes yet.`;
+        prompt += `\n- Keep responses conversational and aligned with a supportive coaching tone.`;
+        prompt += `\n- Prioritize safety. Do not suggest unsafe increases in volume or intensity.`;
+        prompt += `\n- If the request is unclear or unsafe, explain why and ask for clarification or suggest alternatives.`;
+        
+        console.log("Generated Ask Vici Prompt:\n", prompt);
+        return prompt;
     }
     
     private parseAskViciResponse(responseText: string): any {
-        // TODO: Parse Ask Vici response (might be text or structured)
-        return { answer: responseText }; // Placeholder
+        // For MVP, we assume the response is primarily textual.
+        // Future: Could parse for structured adjustment proposals (e.g., JSON diff).
+        return { 
+            answerText: responseText.trim() // Return the cleaned text response
+        }; 
     }
 } 
