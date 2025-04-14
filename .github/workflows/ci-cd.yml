@@ -21,21 +21,23 @@ jobs:
         with:
           node-version: '18'
           cache: 'yarn'
-      
-      - name: Install Yarn
-        run: npm install -g yarn
+          cache-dependency-path: '**/yarn.lock'
           
       - name: Install dependencies
-        run: yarn install
+        run: |
+          yarn set version stable
+          yarn install --frozen-lockfile
         
       - name: Run tests
-        run: yarn workspace shared test
+        working-directory: packages/shared
+        run: yarn test
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.DEV_NEXT_PUBLIC_API_URL }}
           VITE_ENV: ${{ secrets.DEV_VITE_ENV }}
         
       - name: Run linting
-        run: yarn workspace shared lint
+        working-directory: packages/shared
+        run: yarn lint
 
   build-and-push:
     needs: test
@@ -47,6 +49,14 @@ jobs:
       
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Setup Node.js and Yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: yarn install
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
@@ -97,7 +107,7 @@ jobs:
           VITE_ENV: ${{ secrets.STAGING_VITE_ENV }}
         run: |
           kubectl apply -k k8s/overlays/staging
-          kubectl rollout status deployment/vici-app --namespace=staging
+          kubectl rollout status deployment/Vici-App --namespace=staging
           kubectl get pods --namespace=staging
 
   deploy-production:
@@ -123,5 +133,5 @@ jobs:
           VITE_ENV: ${{ secrets.PROD_VITE_ENV }}
         run: |
           kubectl apply -k k8s/base
-          kubectl rollout status deployment/vici-app --namespace=production
+          kubectl rollout status deployment/Vici-App --namespace=production
           kubectl get pods --namespace=production 

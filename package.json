@@ -1,20 +1,30 @@
 {
-  "name": "vici-frontend",
-  "version": "0.1.0",
+  "name": "vici-app",
   "private": true,
-  "repository": "https://github.com/cdunn-dev/Vici-Frontend.git",
-  "author": "cdunn-dev <dunn.chris.r@gmail.com>",
-  "license": "MIT",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/services/*"
   ],
-  "scripts": {
-    "build": "yarn workspaces foreach -p run build",
-    "test": "yarn workspaces foreach -p run test",
-    "lint": "yarn workspaces foreach -p run lint",
-    "typecheck": "yarn workspaces foreach -p run typecheck"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cdunn-dev/Vici-App.git"
   },
-  "devDependencies": {
+  "scripts": {
+    "test": "yarn workspace shared test",
+    "lint": "yarn workspace shared lint",
+    "build": "yarn workspaces foreach -t run build",
+    "api:dev": "yarn workspace @vici/api dev",
+    "db:studio": "yarn workspace @vici/database db:studio",
+    "db:migrate": "yarn workspace @vici/database migrate",
+    "db:seed": "yarn workspace @vici/database db:seed"
+  },
+  "dependencies": {
     "turbo": "^2.5.0"
+  },
+  "packageManager": "yarn@4.8.1",
+  "devDependencies": {
+    "@types/supertest": "^6.0.3",
+    "dotenv-cli": "^8.0.0",
+    "supertest": "^7.1.0"
   }
 }
