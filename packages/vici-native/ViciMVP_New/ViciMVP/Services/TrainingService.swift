@@ -287,6 +287,58 @@ class TrainingService {
         
         return apiClient.post(endpoint: "ai/ask", body: parameters)
     }
+    
+    // MARK: - Async/Await APIs
+    
+    /// Get the active training plan for the current user
+    func getActivePlan() async throws -> TrainingPlan? {
+        return try await apiClient.get(endpoint: "training/plans/active")
+    }
+    
+    /// Get workouts for a specific plan
+    func getWorkouts(planId: String) async throws -> [Workout] {
+        return try await apiClient.get(endpoint: "training/plans/\(planId)/workouts")
+    }
+    
+    /// Create a plan preview using LLM with user preferences
+    func createPlanPreview(_ planRequest: [String: Any]) async throws -> TrainingPlan {
+        return try await apiClient.post(endpoint: "training/plans/preview", body: planRequest)
+    }
+    
+    /// Approve a plan preview to make it active
+    func approvePlan(_ planId: String) async throws -> TrainingPlan {
+        return try await apiClient.post(endpoint: "training/plans/\(planId)/approve", body: nil)
+    }
+    
+    /// Mark a workout as completed
+    func completeWorkout(id: String, completionDate: Date, notes: String? = nil, planId: String? = nil) async throws -> Workout {
+        var parameters: [String: Any] = [
+            "completed": true,
+            "completionDate": ISO8601DateFormatter().string(from: completionDate)
+        ]
+        
+        if let notes = notes {
+            parameters["completionNotes"] = notes
+        }
+        
+        let endpoint = planId != nil ? "training/plans/\(planId!)/workouts/\(id)/complete" : "training/workouts/\(id)/complete"
+        return try await apiClient.put(endpoint: endpoint, body: parameters)
+    }
+    
+    /// Get today's workout
+    func getTodaysWorkout() async throws -> Workout? {
+        return try await apiClient.get(endpoint: "training/workouts/today")
+    }
+    
+    /// Ask the AI coach a question about training
+    func askVici(question: String, planId: String? = nil) async throws -> ViciResponse {
+        var endpoint = "training/ask"
+        if let planId = planId {
+            endpoint = "training/plans/\(planId)/ask"
+        }
+        
+        return try await apiClient.post(endpoint: endpoint, body: ["query": question])
+    }
 }
 
 /// Response structure for AI queries

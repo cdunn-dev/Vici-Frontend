@@ -291,11 +291,11 @@ export class UserController {
     try {
       const userId = req.user.id;
       
-      // Get user's total completed workouts
-      const totalWorkouts = await prisma.workout.count({
+      // Get completed workouts count
+      const completedWorkouts = await prisma.workout.count({
         where: {
           userId,
-          status: 'completed'
+          status: 'Completed'
         }
       });
       
@@ -303,7 +303,7 @@ export class UserController {
       const distanceResult = await prisma.workout.aggregate({
         where: {
           userId,
-          status: 'completed',
+          status: 'Completed',
           actualDistance: {
             not: null
           }
@@ -317,7 +317,7 @@ export class UserController {
       const durationResult = await prisma.workout.aggregate({
         where: {
           userId,
-          status: 'completed',
+          status: 'Completed',
           actualDuration: {
             not: null
           }
@@ -336,7 +336,7 @@ export class UserController {
         by: ['type'],
         where: {
           userId,
-          status: 'completed'
+          status: 'Completed'
         },
         _count: true
       });
@@ -354,7 +354,7 @@ export class UserController {
       return res.status(200).json({
         success: true,
         data: {
-          totalWorkouts,
+          totalWorkouts: completedWorkouts,
           totalDistance,
           totalDuration,
           workoutTypeDistribution: workoutTypes.map(type => ({

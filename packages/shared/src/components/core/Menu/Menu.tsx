@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Icon } from '../Icon';
 
 export type MenuItemType = 'default' | 'primary' | 'secondary' | 'danger';
@@ -13,6 +13,7 @@ export interface MenuItem {
   disabled?: boolean;
   onPress?: () => void;
   subItems?: MenuItem[];
+  style?: { text?: any };
 }
 
 export interface MenuProps {
@@ -100,22 +101,23 @@ export const Menu: React.FC<MenuProps> = ({
             style={[
               styles.label,
               { color: item.disabled ? theme.colors.textSecondary : itemColor },
+              item.style?.text,
             ]}
           >
             {item.label}
           </Text>
-          {hasSubItems && (
+          {item.subItems && item.subItems.length > 0 && (
             <Icon
               name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={item.disabled ? theme.colors.textSecondary : itemColor}
-              style={styles.chevron}
+              size={16}
+              color={theme.colors.text}
+              style={styles.expandIcon}
             />
           )}
         </TouchableOpacity>
         {showDividers && <View style={styles.divider} />}
-        {hasSubItems && isExpanded && (
-          <View style={styles.subItems}>
+        {isExpanded && item.subItems && item.subItems.length > 0 && (
+          <View style={styles.subMenu}>
             {item.subItems.map(subItem => renderMenuItem(subItem, level + 1))}
           </View>
         )}
@@ -146,7 +148,7 @@ export const Menu: React.FC<MenuProps> = ({
       flex: 1,
       fontSize: theme.typography.fontSize.bodyMedium,
     },
-    chevron: {
+    expandIcon: {
       marginLeft: theme.spacing.sm,
     },
     divider: {
@@ -154,7 +156,7 @@ export const Menu: React.FC<MenuProps> = ({
       backgroundColor: theme.colors.border,
       marginHorizontal: theme.spacing.md,
     },
-    subItems: {
+    subMenu: {
       backgroundColor: theme.colors.backgroundSecondary,
     },
   });

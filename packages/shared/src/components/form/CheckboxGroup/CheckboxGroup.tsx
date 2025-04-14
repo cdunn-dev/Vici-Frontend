@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from '@/theme/useTheme';
 import { Checkbox } from '../../core/Checkbox';
 
 export interface CheckboxOption {
@@ -107,7 +107,7 @@ export const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
             <Checkbox
               label={option.label}
               checked={selectedValues.includes(option.id)}
-              onChange={(isChecked) => handleValueChange(option.id, isChecked)}
+              onPress={() => handleValueChange(option.id, !selectedValues.includes(option.id))}
               disabled={disabled || option.disabled}
               testID={`checkbox-${option.id}`}
             />

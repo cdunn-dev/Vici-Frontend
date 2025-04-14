@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Icon } from '../Icon';
 
 export interface Column<T> {

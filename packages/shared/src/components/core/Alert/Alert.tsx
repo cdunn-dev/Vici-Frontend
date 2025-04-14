@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from '@/theme/useTheme';
 import { Icon } from '../Icon';
 
 export type AlertType = 'info' | 'success' | 'warning' | 'error';

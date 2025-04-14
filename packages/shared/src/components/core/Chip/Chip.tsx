@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export interface ChipProps {
   label: string;

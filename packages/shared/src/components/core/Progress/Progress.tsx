@@ -6,7 +6,7 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export interface ProgressProps {
   /** Current progress value (0-100) */

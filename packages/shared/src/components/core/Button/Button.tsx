@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextS
 
 export interface ButtonProps {
   /** The text to display inside the button */
-  title: string;
+  title?: string;
   /** Function to call when button is pressed */
   onPress: () => void;
   /** Visual variant of the button */
@@ -16,6 +16,10 @@ export interface ButtonProps {
   style?: ViewStyle;
   /** Additional styles for the button text */
   textStyle?: TextStyle;
+  /** Children elements */
+  children?: React.ReactNode;
+  /** Test ID for testing */
+  testID?: string;
 }
 
 /**
@@ -29,6 +33,8 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
   textStyle,
+  children,
+  testID,
 }) => {
   const styles = StyleSheet.create({
     button: {
@@ -48,6 +54,8 @@ export const Button: React.FC<ButtonProps> = ({
     },
   });
 
+  const buttonContent = title || children;
+
   return (
     <TouchableOpacity
       style={[styles.button, style]}
@@ -55,14 +63,17 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={disabled || loading}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
+      testID={testID}
     >
       {loading ? (
         <ActivityIndicator 
           testID="loading-indicator"
           color={variant === 'primary' ? '#FFFFFF' : '#5224EF'} 
         />
+      ) : typeof buttonContent === 'string' ? (
+        <Text style={[styles.text, textStyle]}>{buttonContent}</Text>
       ) : (
-        <Text style={[styles.text, textStyle]}>{title}</Text>
+        buttonContent
       )}
     </TouchableOpacity>
   );

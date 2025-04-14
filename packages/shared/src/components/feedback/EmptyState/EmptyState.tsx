@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle, Image, ImageSourcePropType } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from '@/theme/useTheme';
 import { Button } from '../../core/Button';
 
 export interface EmptyStateProps {
@@ -92,11 +92,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       
       {actionLabel && onAction && (
         <Button
-          title={actionLabel}
           onPress={onAction}
           style={styles.button}
           testID="empty-state-action"
-        />
+        >
+          {actionLabel}
+        </Button>
       )}
     </View>
   );

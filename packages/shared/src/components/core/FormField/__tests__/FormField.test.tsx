@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { FormField } from '../FormField';
-import { useTheme } from '../../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 jest.mock('../../../../hooks/useTheme', () => ({
   useTheme: jest.fn(),

@@ -7,7 +7,7 @@ import {
   ViewStyle,
   TextInputProps,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Icon } from '../Icon';
 
 export interface SearchProps extends Omit<TextInputProps, 'style'> {

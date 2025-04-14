@@ -7,7 +7,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Text } from '../Text';
 import { Icon } from '../Icon';
 import DateTimePicker from '@react-native-community/datetimepicker';

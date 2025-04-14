@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, FontAwesome, Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
 type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;

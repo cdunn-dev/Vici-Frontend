@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { Chart } from '../Chart';
-import { useTheme } from '../../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 // Mock the useTheme hook
 jest.mock('../../../../hooks/useTheme', () => ({

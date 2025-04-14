@@ -601,7 +601,7 @@ export class TrainingController {
       const completedWorkout = await prisma.workout.update({
         where: { id },
         data: {
-          status: 'completed',
+          status: 'Completed',
           completedDate: new Date(completedDate),
           actualDuration,
           actualDistance,

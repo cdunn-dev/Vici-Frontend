@@ -6,7 +6,7 @@ import {
   ViewStyle,
   Animated,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export interface SwitchProps {
   /** Whether the switch is on */

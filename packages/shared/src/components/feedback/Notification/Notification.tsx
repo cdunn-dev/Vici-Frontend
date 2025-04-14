@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ViewStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Icon } from '../../core/Icon';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';

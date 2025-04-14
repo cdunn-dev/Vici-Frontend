@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View, ViewStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export type SpinnerSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | number;
 

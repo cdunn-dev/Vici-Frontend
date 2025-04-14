@@ -28,7 +28,7 @@ export class AnalyticsController {
       const completedWorkouts = await prisma.workout.count({
         where: { 
           userId,
-          status: 'completed'
+          status: 'Completed'
         }
       });
       
@@ -36,7 +36,7 @@ export class AnalyticsController {
       const upcomingWorkouts = await prisma.workout.count({
         where: { 
           userId,
-          status: 'scheduled',
+          status: 'Upcoming',
           scheduledDate: {
             gte: new Date()
           }
@@ -47,7 +47,7 @@ export class AnalyticsController {
       const distanceResult = await prisma.workout.aggregate({
         where: {
           userId,
-          status: 'completed',
+          status: 'Completed',
           actualDistance: {
             not: null
           }
@@ -63,7 +63,7 @@ export class AnalyticsController {
       const durationResult = await prisma.workout.aggregate({
         where: {
           userId,
-          status: 'completed',
+          status: 'Completed',
           actualDuration: {
             not: null
           }
@@ -79,7 +79,7 @@ export class AnalyticsController {
       const recentActivity = await prisma.workout.findMany({
         where: {
           userId,
-          status: 'completed'
+          status: 'Completed'
         },
         orderBy: {
           completedDate: 'desc'
@@ -163,7 +163,7 @@ export class AnalyticsController {
       const workouts = await prisma.workout.findMany({
         where: {
           userId,
-          status: 'completed',
+          status: 'Completed',
           completedDate: {
             gte: startDate,
             lte: endDate
@@ -270,7 +270,7 @@ export class AnalyticsController {
         }
         
         const totalWorkouts = plan.workouts.length;
-        const completedWorkouts = plan.workouts.filter(w => w.status === 'completed').length;
+        const completedWorkouts = plan.workouts.filter(w => w.status === 'Completed').length;
         const completionRate = totalWorkouts > 0 ? (completedWorkouts / totalWorkouts) * 100 : 0;
         
         // Calculate timeline progress
@@ -325,7 +325,7 @@ export class AnalyticsController {
         
         const plansProgress = activePlans.map(plan => {
           const totalWorkouts = plan.workouts.length;
-          const completedWorkouts = plan.workouts.filter(w => w.status === 'completed').length;
+          const completedWorkouts = plan.workouts.filter(w => w.status === 'Completed').length;
           const completionRate = totalWorkouts > 0 ? (completedWorkouts / totalWorkouts) * 100 : 0;
           
           // Calculate timeline progress
@@ -392,7 +392,7 @@ export class AnalyticsController {
       const workouts = await prisma.workout.findMany({
         where: {
           userId,
-          status: 'completed'
+          status: 'Completed'
         },
         orderBy: {
           completedDate: 'desc'

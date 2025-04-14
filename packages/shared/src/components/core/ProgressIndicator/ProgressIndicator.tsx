@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export type ProgressIndicatorType = 'linear' | 'circular' | 'steps';
 export type ProgressIndicatorSize = 'small' | 'medium' | 'large';

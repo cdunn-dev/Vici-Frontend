@@ -8,7 +8,7 @@ import {
   TextStyle,
   Text,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export interface TextAreaProps extends Omit<TextInputProps, 'style'> {
   /** Label text for the textarea */

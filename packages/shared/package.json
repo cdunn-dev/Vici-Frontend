@@ -52,6 +52,8 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "build-mvp": "tsc --project tsconfig.json --skipLibCheck --noEmit false --emitDeclarationOnly false",
+    "build-force": "./scripts/build-force.sh",
     "dev": "tsc --watch",
     "test": "jest --config jest.config.js --passWithNoTests",
     "test:watch": "jest --config jest.config.js --watch",

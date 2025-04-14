@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle, TextStyle, Pressable, Text } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Icon } from '../Icon';
 
 export interface RadioProps {

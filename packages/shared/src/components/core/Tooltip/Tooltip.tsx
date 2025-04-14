@@ -7,7 +7,7 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 import { Text } from '../Text';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';

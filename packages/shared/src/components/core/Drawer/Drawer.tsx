@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export type DrawerPosition = 'left' | 'right' | 'top' | 'bottom';
 

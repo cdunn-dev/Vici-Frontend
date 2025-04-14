@@ -11,7 +11,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export interface RangeSliderProps {
   /**

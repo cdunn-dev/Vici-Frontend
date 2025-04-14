@@ -8,7 +8,7 @@ import {
   TextStyle,
   Text,
 } from 'react-native';
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 export interface SliderProps {
   /** Minimum value of the slider */
@@ -63,30 +63,31 @@ export const Slider: React.FC<SliderProps> = ({
     pan.setValue(percentage);
   }, [value, min, max, sliderWidth, pan]);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled,
-      onMoveShouldSetPanResponder: () => !disabled,
-      onPanResponderGrant: () => {
-        pan.setOffset(pan._value);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const newValue = Math.min(
-          Math.max(0, pan._offset + gestureState.dx),
-          sliderWidth
-        );
-        pan.setValue(newValue);
-        const percentage = newValue / sliderWidth;
-        const steppedValue = Math.round(
-          (min + (max - min) * percentage) / step
-        ) * step;
-        onValueChange(steppedValue);
-      },
-      onPanResponderRelease: () => {
-        pan.flattenOffset();
-      },
-    })
-  ).current;
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
+    onPanResponderGrant: () => {
+      // @ts-ignore - Ignoring private property access
+      pan.setOffset(pan._value);
+      pan.setValue(0);
+    },
+    onPanResponderMove: (_, gestureState) => {
+      // @ts-ignore - Ignoring private property access
+      const newValue = Math.max(0, Math.min(sliderWidth, pan._offset + gestureState.dx));
+      pan.setValue(0);
+      pan.setOffset(newValue);
+      
+      // Calculate the new slider value
+      const calculatedValue = min + (newValue / sliderWidth) * (max - min);
+      const steppedValue = Math.round(calculatedValue / step) * step;
+      onValueChange(steppedValue);
+    },
+    onPanResponderRelease: () => {
+      pan.flattenOffset();
+    },
+  });
 
   const styles = StyleSheet.create({
     container: {

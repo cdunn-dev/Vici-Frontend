@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { render } from '@testing-library/react-native';
 import { FormGroup } from '../FormGroup';
-import { useTheme } from '../../../../hooks/useTheme';
+import { useTheme } from "@/theme/useTheme";
 
 jest.mock('../../../../hooks/useTheme', () => ({
   useTheme: jest.fn(),

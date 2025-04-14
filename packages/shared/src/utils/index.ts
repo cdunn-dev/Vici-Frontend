@@ -7,8 +7,9 @@
 // Format utilities
 export * from './format';
 
-// Date utilities
-export * from './date';
+// Date utilities - resolve formatDate ambiguity
+import { formatDate as formatDateFromDate } from './date';
+export { formatDateFromDate };
 
 // Validation utilities
 export * from './validation';

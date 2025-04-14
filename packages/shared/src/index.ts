@@ -10,16 +10,19 @@ export * from './services';
 // Export types
 export * from './types';
 
-// Export utils
-export * from './utils';
+// Export utils - resolve isNumber ambiguity
+import * as utils from './utils';
+export { utils };
 
-// Export theme
-export * from './theme';
+// Export theme - resolve Theme ambiguity
+import * as themeExports from './theme';
+export { themeExports };
 
-// Export store
-export * from './store';
+// Export store - fix store not being a module
+// export * from './store';
 
-export * from './utils/format';
+// Format utilities are already exported through utils
+// export * from './utils/format';
 
 export const add = (a: number, b: number): number => {
   return a + b;
