@@ -1,7 +1,7 @@
 # Vici MVP Project Tracker
 
 **Version:** 2.1
-**Date:** [Current Date]
+**Date:** 2025-07-15
 **Status:** Revised - iOS Focus with Real Integrations + Clean-up
 
 **Document Purpose:** This document serves as the central tracker for all remaining tasks required to complete and launch the Vici MVP. It reflects the strategic decision to focus on iOS-only launch with real Strava and LLM integrations while streamlining the technical approach.
@@ -63,34 +63,37 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
   - [x] Database models (Prisma) setup
   - [x] Basic API endpoints structure setup
   - [x] Authentication services & middleware setup
-  - [/] Strava Integration Services:
+  - [x] Strava Integration Services:
     - [x] Auth/OAuth flow implementation
     - [x] Athlete data import implementation
-    - [/] Activity history import implementation
-  - [ ] LLM Integration Services:
-    - [ ] API configuration and connection setup
-    - [ ] Training plan generation prompt engineering
-    - [ ] Ask Vici prompt engineering
-  - [ ] Training services:
+    - [x] Activity history import implementation
+  - [x] LLM Integration Services:
+    - [x] API configuration and connection setup
+    - [x] Training plan generation prompt engineering
+    - [x] Ask Vici prompt engineering
+  - [x] Training services:
     - [x] Implement `getActivePlan` logic
     - [x] Implement `getTodaysWorkout` logic
     - [x] Implement `approvePlan` logic
-    - [ ] Implement `createPlan` with real LLM integration
-    - [ ] Implement `askVici` with real LLM integration
+    - [x] Implement `createPlan` with real LLM integration
+    - [x] Implement `askVici` with real LLM integration
     - [x] Implement `approveViciChanges` logic
-  - [ ] Basic Analytics services (Limited scope - user acquisition & key feature usage)
-  - [ ] User API implementation completion (Focus on essential profile management)
+  - [/] Basic Analytics services (Limited scope - user acquisition & key feature usage)
+  - [/] User API implementation completion (Focus on essential profile management)
 
 ### Phase 3: Backend Testing (Core MVP Needs)
 
-- [ ] Unit Tests (Focus on Strava and LLM integration services)
+- [/] Unit Tests (Focus on Strava and LLM integration services)
 - [/] Integration Tests (`packages/api/__tests__/integration`):
   - [x] Auth API Endpoints
   - [x] User API Endpoints (All runnable tests passing; 1 `todo` for profile pic)
-  - [ ] Strava Integration API Endpoints
-  - [ ] Training API Endpoints with LLM Integration
+  - [x] Strava Integration API Endpoints
+  - [x] Training API Endpoints with LLM Integration
   - [ ] Simplified Analytics API Endpoints
-- [ ] API Documentation (Essential endpoints only)
+- [/] API Documentation (Essential endpoints only):
+  - [x] Strava integration documentation
+  - [x] LLM integration documentation
+  - [ ] User/Auth API documentation
 
 ### Phase 4: iOS Frontend Implementation (Direct Implementation)
 
@@ -124,9 +127,9 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
   - [ ] Test across multiple iPhone models
   - [ ] Verify responsive layouts
   - [ ] Test offline/poor connectivity scenarios
-- [ ] Integration Testing:
-  - [ ] Strava API integration tests
-  - [ ] LLM integration tests
+- [/] Integration Testing:
+  - [x] Strava API integration tests
+  - [x] LLM integration tests
   - [ ] End-to-end user flows
 - [ ] User Acceptance Testing (UAT):
   - [ ] Internal team testing of real features
@@ -137,10 +140,10 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
 
 ### Phase 6: Documentation & Launch Prep (iOS MVP)
 
-- [ ] Update Documentation:
-  - [ ] Development setup guide (iOS focus)
-  - [ ] API documentation for essential endpoints
-  - [ ] LLM prompt documentation
+- [/] Update Documentation:
+  - [x] Development setup guide (iOS focus)
+  - [x] API documentation for essential endpoints
+  - [x] LLM prompt documentation
 - [ ] App Store Preparation:
   - [ ] App Store screenshots & descriptions
   - [ ] Privacy policy updates
@@ -167,6 +170,12 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
 - [ ] **Fix Monorepo Module Resolution/Build Errors:**
   - [ ] Investigate why `@vici/mobile` fails to resolve `@vici/shared` during build/lint
   - [ ] Fix Metro/TypeScript/Turbo configurations and potential interactions
+  - [ ] **Comprehensive TypeScript Type Fixes:**
+    - [ ] Address issues documented in `docs/TYPE_ISSUES.md`
+    - [ ] Fix field name mismatches between code and Prisma schema
+    - [ ] Correct enum capitalization throughout the codebase
+    - [ ] Update relationship traversals in controllers
+    - [ ] Add proper TypeScript interfaces for all API models
 - [ ] **Implement Core Shared Logic:**
   - [ ] Refactor iOS-specific implementations to shared packages
   - [ ] Implement better abstraction for API services
