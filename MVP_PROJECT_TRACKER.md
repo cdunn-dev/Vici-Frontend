@@ -103,18 +103,18 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
   - [x] Implement direct API client for backend services
 - [/] Authentication screens (Connect to real backend)
   - [/] Login/Registration flow (UI exists, connecting to real API)
-  - [ ] Strava OAuth Connection flow
-- [ ] Training Plan Creation flow (Using real LLM)
-  - [ ] Goal setting interface
-  - [ ] Athlete profile input
-  - [ ] Real plan generation & display
-- [ ] Training Plan Viewing screens
-  - [ ] This Week view
-  - [ ] Today's Workout view
-  - [ ] Plan Overview
-- [ ] Ask Vici interface (Using real LLM)
-  - [ ] Basic question interface
-  - [ ] Plan adjustment requests
+  - [x] Strava OAuth Connection flow
+- [x] Training Plan Creation flow (Using real LLM)
+  - [x] Goal setting interface
+  - [x] Athlete profile input
+  - [x] Real plan generation & display
+- [x] Training Plan Viewing screens
+  - [x] This Week view
+  - [x] Today's Workout view
+  - [x] Plan Overview
+- [x] Ask Vici interface (Using real LLM)
+  - [x] Basic question interface
+  - [x] Plan adjustment requests
 - [ ] Profile/Settings screens (Essential settings only)
 - [/] iOS-specific optimizations:
   - [ ] SwiftUI performance tuning
@@ -140,10 +140,11 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
 
 ### Phase 6: Documentation & Launch Prep (iOS MVP)
 
-- [/] Update Documentation:
+- [x] Update Documentation:
   - [x] Development setup guide (iOS focus)
   - [x] API documentation for essential endpoints
   - [x] LLM prompt documentation
+  - [x] Authentication integration documentation
 - [ ] App Store Preparation:
   - [ ] App Store screenshots & descriptions
   - [ ] Privacy policy updates
