@@ -10,6 +10,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
+    "test:integration": "jest --testPathPattern=__tests__/integration",
+    "test:llm": "jest --testPathPattern=__tests__/integration/llm.integration.test.ts",
     "lint": "eslint src/**/*.ts",
     "clean": "rimraf dist"
   },

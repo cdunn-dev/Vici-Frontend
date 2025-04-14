@@ -23,6 +23,86 @@ if (API_KEY) {
     console.error("LLM Service could not initialize due to missing API key.");
 }
 
+// --- Define interfaces for input/output structures ---
+
+// For training plan generation input
+interface TrainingPlanRequestData {
+    profile: {
+        experienceLevel?: string;
+        fitnessLevel?: string;
+        personalBests?: Array<{
+            distanceMeters: number;
+            timeSeconds: number;
+            dateAchieved?: string;
+        }>;
+    };
+    goal: {
+        type: 'Race' | 'NonRace';
+        distanceMeters?: number;
+        raceDate?: string;
+        goalTimeSeconds?: number;
+        previousPbSeconds?: number;
+        objective?: string;
+    };
+    preferences: {
+        runningDaysPerWeek?: number;
+        preferredLongRunDay?: string;
+        targetWeeklyDistanceMeters?: number;
+        qualityWorkoutsPerWeek?: number;
+        coachingStyle?: string;
+    };
+    historicalWeeklySummaries?: Array<{
+        startDate: string;
+        totalDistanceMeters: number;
+        numberOfRuns: number;
+    }>;
+    recentKeyWorkouts?: Array<{
+        date: string;
+        type: string;
+        distanceMeters: number;
+        movingTimeSeconds: number;
+        averagePaceSecondsPerKm: number | null;
+    }>;
+}
+
+// For Ask Vici input
+interface AskViciRequestData {
+    query: string;
+    context: {
+        plan: {
+            id: string;
+            status: string;
+            goal: any; // Could be more specific based on your schema
+            currentWeekData?: {
+                weekNumber: number;
+                startDate: string;
+                endDate: string;
+                phase: string | null;
+                workouts: Array<{
+                    date: string;
+                    workoutType: string;
+                    description: string | null;
+                    distanceMeters: number | null;
+                    durationSeconds: number | null;
+                    status: string;
+                }>;
+            };
+        };
+        profile: {
+            experienceLevel?: string;
+            fitnessLevel?: string;
+        };
+    };
+}
+
+// For Ask Vici response
+interface AskViciResponse {
+    answerText: string;
+    proposedChanges: any | null; // Could be more specific if you define a standard structure
+    hasStructuredChanges: boolean;
+    timestamp: string;
+}
+
 // --- Zod Schema Definition for LLM Training Plan Output --- 
 const paceTargetSchema = z.object({
     minSecondsPerKm: z.number().positive().nullable(),
@@ -83,75 +163,111 @@ export class LLMService {
 
     /**
      * Generates a training plan based on user profile, goals, and history.
-     * TODO: Define input structure and implement prompt engineering.
-     * @param {object} planRequestData - Data containing user profile, goal, preferences, history.
-     * @returns {Promise<any>} The generated training plan structure (e.g., JSON).
+     * @param {TrainingPlanRequestData} planRequestData - Structured data containing user profile, goal, preferences, history.
+     * @returns {Promise<z.infer<typeof llmPlanResponseSchema>>} The generated training plan structure.
      */
-    async generateTrainingPlan(planRequestData: any): Promise<any> {
+    async generateTrainingPlan(planRequestData: TrainingPlanRequestData): Promise<z.infer<typeof llmPlanResponseSchema>> {
         if (!this.model) {
             throw new Error("LLM Service not initialized. Check API Key.");
         }
 
         console.log("Generating training plan with LLM...", planRequestData); // Log input for debugging
 
-        // --- TODO: Prompt Engineering --- 
         const prompt = this.buildTrainingPlanPrompt(planRequestData);
-        // --- End Prompt Engineering ---
+        
+        const MAX_RETRIES = 2;
+        let retries = 0;
+        let lastError;
 
-        try {
-            // Example call - adjust generationConfig and safetySettings as needed
-            const result = await this.model.generateContent(prompt);
-            const response = result.response;
-            const text = response.text();
-            console.log("LLM Response Text:", text); // Log raw response
+        while (retries <= MAX_RETRIES) {
+            try {
+                const result = await this.model.generateContent(prompt);
+                const response = result.response;
+                const text = response.text();
+                console.log("LLM Response Text:", text); // Log raw response
 
-            // --- TODO: Response Parsing --- 
-            // Parse the text response (expecting JSON or structured format)
-            const planJson = this.parsePlanFromResponse(text);
-            // --- End Response Parsing ---
-
-            return planJson;
-
-        } catch (error) {
-            console.error("Error generating training plan from LLM:", error);
-            throw new Error("Failed to generate training plan using LLM.");
+                // Parse the text response
+                const planJson = this.parsePlanFromResponse(text);
+                return planJson;
+            } catch (error) {
+                lastError = error;
+                console.warn(`Error in training plan LLM call (attempt ${retries+1}/${MAX_RETRIES+1}):`, error);
+                
+                // Only retry on network/timeout errors, not on format or prompt errors
+                if (error.message?.includes('network') || error.message?.includes('timeout')) {
+                    retries++;
+                    if (retries <= MAX_RETRIES) {
+                        const backoffMs = Math.pow(2, retries) * 1000;
+                        console.log(`Retrying in ${backoffMs}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, backoffMs));
+                        continue;
+                    }
+                } else {
+                    // Don't retry on other errors
+                    break;
+                }
+            }
         }
+        
+        console.error("Error generating training plan from LLM after retries:", lastError);
+        throw new Error("Failed to generate training plan using LLM.");
     }
 
     /**
      * Handles "Ask Vici" requests for plan adjustments or Q&A.
-     * TODO: Define input structure and implement prompt engineering.
-     * @param {object} askRequestData - Data containing user query, current plan context, profile.
-     * @returns {Promise<any>} The response (text or structured adjustment proposal).
+     * @param {AskViciRequestData} askRequestData - Data containing user query, current plan context, profile.
+     * @returns {Promise<AskViciResponse>} The response with text and potentially structured adjustment proposal.
      */
-    async handleAskVici(askRequestData: any): Promise<any> {
+    async handleAskVici(askRequestData: AskViciRequestData): Promise<AskViciResponse> {
         if (!this.model) {
-            throw new Error("LLM Service not initialized. Check API Key.");
+            throw new Error("LLM Service not initialized. Check API key.");
         }
         
         console.log("Handling Ask Vici request with LLM...", askRequestData);
 
         const prompt = this.buildAskViciPrompt(askRequestData);
         
-         try {
-            const result = await this.model.generateContent(prompt);
-            const response = result.response;
-            const text = response.text();
-            console.log("Ask Vici LLM Response Text:", text);
-            
-            // For MVP, just return the text response. Parsing structured adjustments is complex.
-            const askViciResponse = this.parseAskViciResponse(text);
-            return askViciResponse;
+        const MAX_RETRIES = 2;
+        let retries = 0;
+        let lastError;
 
-        } catch (error) {
-            console.error("Error handling Ask Vici request from LLM:", error);
-            throw new Error("Failed to handle Ask Vici request using LLM.");
+        while (retries <= MAX_RETRIES) {
+            try {
+                const result = await this.model.generateContent(prompt);
+                const response = result.response;
+                const text = response.text();
+                console.log("Ask Vici LLM Response Text:", text);
+                
+                // Parse response using our improved parser
+                const askViciResponse = this.parseAskViciResponse(text);
+                return askViciResponse;
+            } catch (error) {
+                lastError = error;
+                console.warn(`Error in Ask Vici LLM call (attempt ${retries+1}/${MAX_RETRIES+1}):`, error);
+                
+                // Only retry on network/timeout errors, not on format or prompt errors
+                if (error.message?.includes('network') || error.message?.includes('timeout')) {
+                    retries++;
+                    if (retries <= MAX_RETRIES) {
+                        const backoffMs = Math.pow(2, retries) * 1000;
+                        console.log(`Retrying in ${backoffMs}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, backoffMs));
+                        continue;
+                    }
+                } else {
+                    // Don't retry on other errors
+                    break;
+                }
+            }
         }
+        
+        console.error("Error handling Ask Vici request from LLM after retries:", lastError);
+        throw new Error("Failed to handle Ask Vici request using LLM.");
     }
 
     // --- Private Helper Methods for Prompt Building & Parsing --- 
 
-    private buildTrainingPlanPrompt(data: any): string {
+    private buildTrainingPlanPrompt(data: TrainingPlanRequestData): string {
         const { profile, goal, preferences, historicalWeeklySummaries, recentKeyWorkouts } = data;
         
         // Build prompt piece by piece
@@ -264,7 +380,7 @@ export class LLMService {
         return prompt;
     }
 
-    private parsePlanFromResponse(responseText: string): any {
+    private parsePlanFromResponse(responseText: string): z.infer<typeof llmPlanResponseSchema> {
         if (!responseText) {
             throw new Error("LLM returned an empty response.");
         }
@@ -303,7 +419,7 @@ export class LLMService {
         }
     }
     
-     private buildAskViciPrompt(data: any): string {
+     private buildAskViciPrompt(data: AskViciRequestData): string {
         const { query, context } = data;
         const { plan, profile } = context;
 
@@ -345,11 +461,41 @@ export class LLMService {
         return prompt;
     }
     
-    private parseAskViciResponse(responseText: string): any {
-        // For MVP, we assume the response is primarily textual.
-        // Future: Could parse for structured adjustment proposals (e.g., JSON diff).
+    private parseAskViciResponse(responseText: string): AskViciResponse {
+        if (!responseText) {
+            throw new Error("LLM returned an empty response.");
+        }
+
+        let cleanedText = responseText.trim();
+        
+        // Try to extract structured adjustments if present
+        // This looks for JSON blocks in the response that contain adjustment proposals
+        const adjustmentRegex = /```(?:json)?\s*({[\s\S]*?})```|({[\s\S]*"adjustments"[\s\S]*})/i;
+        let proposedChanges = null;
+        
+        const match = cleanedText.match(adjustmentRegex);
+        if (match && (match[1] || match[2])) {
+            const jsonStr = (match[1] || match[2]).trim();
+            try {
+                proposedChanges = JSON.parse(jsonStr);
+                // Remove the JSON block from the text so we return clean text
+                cleanedText = cleanedText.replace(adjustmentRegex, '').trim();
+                console.log("Successfully extracted structured adjustment proposal from LLM response");
+            } catch (e) {
+                console.warn("Found potential adjustment JSON in response, but failed to parse:", e);
+                // We continue with the text response since we couldn't parse the JSON
+            }
+        }
+
+        // Handle special cases or clean up text if needed
+        // For example, remove any markdown formatting or standardize terminology
+        
+        // Build the final response object
         return { 
-            answerText: responseText.trim() // Return the cleaned text response
+            answerText: cleanedText,
+            proposedChanges: proposedChanges, // Will be null if no structured changes detected
+            hasStructuredChanges: !!proposedChanges,
+            timestamp: new Date().toISOString()
         }; 
     }
 } 
