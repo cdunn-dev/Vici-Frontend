@@ -1,13 +1,34 @@
 import SwiftUI
+import UIKit
+import Combine
+import Foundation
+
+// Handle URL callbacks for OAuth flow
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        // Check if this is a Strava callback
+        if url.scheme == "vici" && url.host == "strava-callback" {
+            // Post notification for the SafariViewController to handle
+            NotificationCenter.default.post(name: NSNotification.Name("StravaSafariCallbackURL"), object: url)
+            return true
+        }
+        return false
+    }
+}
 
 @main
 struct ViciMVPApp: App {
-    // Use the comprehensive AuthViewModel from ViewModels/AuthViewModel.swift
-    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var authViewModel = AuthViewModel_Fixed()
+    
+    // Register app delegate for custom URL scheme handling
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
         WindowGroup {
-            if authViewModel.isLoggedIn {
+            if authViewModel.isLoading {
+                LoadingView()
+                    .environmentObject(authViewModel)
+            } else if authViewModel.isLoggedIn {
                 MainTabView()
                     .environmentObject(authViewModel)
             } else {
@@ -18,51 +39,12 @@ struct ViciMVPApp: App {
     }
 }
 
-// MARK: - Redundant AuthViewModel 
-// NOTE: This simple implementation is replaced by the comprehensive AuthViewModel in ViewModels/AuthViewModel.swift
-// This code should be removed but is kept temporarily to prevent breaking changes elsewhere in the codebase
-class _DeprecatedAuthViewModel: ObservableObject {
-    @Published var isAuthenticated: Bool = false
-    @Published var currentUser: User?
-    private let authService = AuthService.shared
-    
-    init() {
-        // Check if user is already logged in
-        if let user = authService.currentUser {
-            self.currentUser = user
-            self.isAuthenticated = true
+struct LoadingView: View {
+    var body: some View {
+        VStack {
+            ProgressView("Loading...")
+                .progressViewStyle(CircularProgressViewStyle())
+                .padding()
         }
     }
-    
-    func login(email: String, password: String) async {
-        do {
-            let user = try await authService.login(email: email, password: password)
-            DispatchQueue.main.async {
-                self.currentUser = user
-                self.isAuthenticated = true
-            }
-        } catch {
-            print("Login error: \(error)")
-        }
-    }
-    
-    func register(name: String, email: String, password: String) async {
-        do {
-            let user = try await authService.register(name: name, email: email, password: password)
-            DispatchQueue.main.async {
-                self.currentUser = user
-                self.isAuthenticated = true
-            }
-        } catch {
-            print("Registration error: \(error)")
-        }
-    }
-    
-    func logout() {
-        authService.logout()
-        DispatchQueue.main.async {
-            self.currentUser = nil
-            self.isAuthenticated = false
-        }
-    }
-} 
+}
