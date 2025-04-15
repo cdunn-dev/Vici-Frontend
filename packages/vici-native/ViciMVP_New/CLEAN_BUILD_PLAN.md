@@ -34,6 +34,8 @@ This document outlines the comprehensive plan to fix all build issues in the Vic
   - ✅ Successfully removed references from project.pbxproj via Xcode
   - ✅ Deleted FixedFiles directory and verified build still succeeds
 - ✅ TrainingPlanViewModel now connects to real data services
+- ✅ Comprehensive logging added to debug API connectivity
+- ✅ Pull-to-refresh and manual refresh functionality added
 
 ## Next Steps: Real Implementation
 
@@ -52,8 +54,9 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Connect TrainingPlanViewModel to real TrainingService ✅
    - [x] Run a build test to verify changes ✅
    - [x] Launch the app in the simulator with updated ViewModel ✅
+   - [x] Add logging/debugging to verify API connectivity ✅
+   - [x] Add refresh mechanism for manual data reload ✅
    - [ ] Test that workouts load from the API properly
-   - [ ] Add logging/debugging to verify API connectivity
    - [ ] Implement weekly workout display
    - [ ] Add today's workout detail view
 
@@ -69,9 +72,11 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Update TrainingPlanViewModel to use real data ✅
    - [x] Run a build test to verify changes ✅
    - [x] Test the updated view in the simulator ✅
-   - [ ] Add logging to debug API connectivity
+   - [x] Add logging to debug API connectivity ✅
+   - [x] Add refresh mechanism for manual data reload ✅
    - [ ] Configure and verify backend API access
    - [ ] Debug any issues with API connectivity
+   - [ ] Enhance error handling in the UI
 
 2. **Move to other views**
    - [ ] Update AskViciView to use real data models
@@ -82,7 +87,8 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Commit all current changes with appropriate message ✅
    - [x] Create branch for TrainingPlanView enhancements ✅
    - [x] Commit TrainingPlanViewModel updates ✅
-   - [ ] Push branch to remote repository
+   - [x] Push branch to remote repository ✅
+   - [ ] Commit UI enhancements with refresh functionality
 
 ## Dependency Map (Updated)
 
@@ -99,6 +105,8 @@ This map documents the key interconnected components to ensure we address all de
 - `AuthViewModel`: Used by `ViciMVPApp`, `MainTabView`, `AuthenticationView`, `ProfileView`
 - `TrainingPlanViewModel`: Used by `TrainingPlanView`, potentially other views
   - ✅ Now connects to TrainingService for real API data
+  - ✅ Enhanced with proper logging for debugging
+  - ✅ Supports manual data refresh
 
 ### Services
 - `AuthService`: Used by `AuthViewModel`
@@ -131,6 +139,8 @@ This map documents the key interconnected components to ensure we address all de
 ### Checkpoint 4: Real API Integration ⚠️
 - [x] Connect TrainingPlanViewModel to real TrainingService ✅
 - [x] Verify builds succeed with real API connections ✅ 
+- [x] Add logging for API request debugging ✅
+- [x] Add data refresh functionality ✅
 - [ ] Test that API requests function correctly
 - [ ] Verify data flows correctly from API to views
 - [ ] Handle loading states and error scenarios
