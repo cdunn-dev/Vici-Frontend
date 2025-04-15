@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @EnvironmentObject var authViewModel: AuthViewModel_Fixed
+    @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
         TabView {
@@ -53,6 +53,6 @@ struct MainTabView: View {
 struct MainTabView_Previews: PreviewProvider {
     static var previews: some View {
         MainTabView()
-            .environmentObject(AuthViewModel_Fixed())
+            .environmentObject(AuthViewModel.loggedInPreview())
     }
 }

@@ -1,11 +1,11 @@
 import SwiftUI
 import SafariServices
-import class ViciMVP.AuthViewModel_Fixed
+import class ViciMVP.AuthViewModel
 import class ViciMVP.StravaService
 
 /// View for connecting user's Strava account
 struct StravaConnectView: View {
-    @EnvironmentObject var authViewModel: AuthViewModel_Fixed
+    @EnvironmentObject var authViewModel: AuthViewModel
     @State private var isConnecting = false
     @State private var error: Error?
     @State private var isShowingAuthWebView = false
@@ -270,6 +270,6 @@ struct SafariView: UIViewControllerRepresentable {
 struct StravaConnectView_Previews: PreviewProvider {
     static var previews: some View {
         StravaConnectView()
-            .environmentObject(AuthViewModel_Fixed())
+            .environmentObject(AuthViewModel.loggedInPreview())
     }
 } 

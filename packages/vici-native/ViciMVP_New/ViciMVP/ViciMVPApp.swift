@@ -18,10 +18,33 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct ViciMVPApp: App {
-    @StateObject private var authViewModel = AuthViewModel_Fixed()
+    // Set to true to use mock services for testing
+    private let useMockServices = true
+    
+    @StateObject private var authViewModel: AuthViewModel
     
     // Register app delegate for custom URL scheme handling
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
+    init() {
+        if useMockServices {
+            // Use mock services for testing
+            let mockAuthService = MockAuthService()
+            let mockKeychainService = MockKeychainService()
+            let mockStravaService = StravaService.shared // We'll continue to use the real one for now
+            
+            let viewModel = AuthViewModel(
+                authService: mockAuthService,
+                keychainService: mockKeychainService,
+                stravaService: mockStravaService
+            )
+            _authViewModel = StateObject(wrappedValue: viewModel)
+        } else {
+            // Use real services
+            let viewModel = AuthViewModel()
+            _authViewModel = StateObject(wrappedValue: viewModel)
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
