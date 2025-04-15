@@ -2,6 +2,30 @@ import Foundation
 import Combine
 import os.log
 
+/// Custom error types for TrainingPlanViewModel
+enum TrainingPlanViewModelError: Error, LocalizedError {
+    case networkError(String)
+    case noActivePlan
+    case serverError(String)
+    case authenticationError
+    case unknownError(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .networkError(let message):
+            return "Network error: \(message)"
+        case .noActivePlan:
+            return "No active training plan found"
+        case .serverError(let message):
+            return "Server error: \(message)"
+        case .authenticationError:
+            return "Authentication error. Please log in again."
+        case .unknownError(let message):
+            return "Unknown error: \(message)"
+        }
+    }
+}
+
 /// ViewModel for handling training plan data and interactions.
 /// Connects TrainingPlanView with backend services.
 class TrainingPlanViewModel: ObservableObject {
@@ -11,8 +35,10 @@ class TrainingPlanViewModel: ObservableObject {
     @Published var todaysWorkout: Workout?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var errorType: TrainingPlanViewModelError?
     @Published var showCreatePlan = false
     @Published var showEditPlan = false
+    @Published var isOffline = false
     
     // MARK: - Private Properties
     private let trainingService: TrainingService
@@ -34,14 +60,26 @@ class TrainingPlanViewModel: ObservableObject {
         } else {
             logger.info("Initialized TrainingPlanViewModel with real data source")
         }
+        
+        // Check for internet connectivity
+        checkConnectivity()
     }
     
     // MARK: - Public Methods
     
     /// Load the active training plan from the backend
     func loadActivePlan() {
+        // Skip loading if offline and fall back to cached/preview data
+        if isOffline {
+            logger.warning("Device is offline, skipping API call")
+            errorType = .networkError("You're offline. Showing cached data.")
+            errorMessage = errorType?.localizedDescription
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
+        errorType = nil
         
         logger.info("Requesting active training plans from API")
         trainingService.getTrainingPlans()
@@ -49,8 +87,7 @@ class TrainingPlanViewModel: ObservableObject {
             .sink(receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case .failure(let error) = completion {
-                    self?.errorMessage = error.localizedDescription
-                    self?.logger.error("Failed to load training plans: \(error.localizedDescription)")
+                    self?.handleError(error)
                 } else {
                     self?.logger.info("Successfully completed training plans request")
                 }
@@ -69,6 +106,14 @@ class TrainingPlanViewModel: ObservableObject {
                     self.activePlan = nil
                     self.workouts = []
                     self.todaysWorkout = nil
+                    
+                    if plans.isEmpty {
+                        self.errorType = .noActivePlan
+                        self.errorMessage = "No training plans found. Create a new plan to get started!"
+                    } else {
+                        self.errorType = .noActivePlan
+                        self.errorMessage = "You have \(plans.count) plans, but none are active."
+                    }
                 }
             })
             .store(in: &cancellables)
@@ -76,8 +121,15 @@ class TrainingPlanViewModel: ObservableObject {
     
     /// Load workouts for a specific plan ID
     func loadWorkouts(for planId: String) {
+        // Skip loading if offline and fall back to cached/preview data
+        if isOffline {
+            logger.warning("Device is offline, skipping API call")
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
+        errorType = nil
         
         logger.info("Requesting workouts for plan: \(planId)")
         trainingService.getWorkouts(planId: planId)
@@ -85,8 +137,7 @@ class TrainingPlanViewModel: ObservableObject {
             .sink(receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case .failure(let error) = completion {
-                    self?.errorMessage = error.localizedDescription
-                    self?.logger.error("Failed to load workouts: \(error.localizedDescription)")
+                    self?.handleError(error)
                 } else {
                     self?.logger.info("Successfully completed workouts request")
                 }
@@ -95,14 +146,32 @@ class TrainingPlanViewModel: ObservableObject {
                 self.logger.info("Received \(workouts.count) workouts from API")
                 self.workouts = workouts
                 self.updateTodaysWorkout()
+                
+                // Update workouts in the active plan if it exists
+                if self.activePlan != nil {
+                    var updatedPlan = self.activePlan!
+                    updatedPlan.workouts = workouts
+                    self.activePlan = updatedPlan
+                }
             })
             .store(in: &cancellables)
     }
     
     /// Mark a workout as completed
     func completeWorkout(id: String, notes: String? = nil) async {
+        // Skip API call if offline
+        if isOffline {
+            logger.warning("Device is offline, skipping API call")
+            DispatchQueue.main.async {
+                self.errorType = .networkError("Cannot complete workout while offline")
+                self.errorMessage = self.errorType?.localizedDescription
+            }
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
+        errorType = nil
         
         logger.info("Marking workout as completed: \(id), notes: \(notes ?? "none")")
         
@@ -127,12 +196,20 @@ class TrainingPlanViewModel: ObservableObject {
                     self.todaysWorkout = workout
                     self.logger.debug("Updated today's workout reference")
                 }
+                
+                // Update workout in the active plan if it exists
+                if var plan = self.activePlan, var planWorkouts = plan.workouts {
+                    if let index = planWorkouts.firstIndex(where: { $0.id == id }) {
+                        planWorkouts[index] = workout
+                        plan.workouts = planWorkouts
+                        self.activePlan = plan
+                    }
+                }
             }
         } catch {
             DispatchQueue.main.async { [weak self] in
                 self?.isLoading = false
-                self?.errorMessage = error.localizedDescription
-                self?.logger.error("Failed to complete workout: \(error.localizedDescription)")
+                self?.handleError(error)
             }
         }
     }
@@ -154,6 +231,44 @@ class TrainingPlanViewModel: ObservableObject {
         } else {
             logger.notice("No workout scheduled for today")
         }
+    }
+    
+    /// Handle API errors and categorize them
+    private func handleError(_ error: Error) {
+        logger.error("API Error: \(error.localizedDescription)")
+        
+        // Categorize the error type
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .networkError(let message):
+                self.errorType = .networkError(message)
+                self.isOffline = true
+            case .invalidResponse:
+                self.errorType = .serverError("Invalid response from server")
+            case .decodingError(let message):
+                self.errorType = .serverError("Failed to decode data: \(message)")
+            case .unauthorized:
+                self.errorType = .authenticationError
+            case .serverError(let code, let message):
+                self.errorType = .serverError("Server error \(code): \(message)")
+            default:
+                self.errorType = .unknownError(error.localizedDescription)
+            }
+        } else {
+            self.errorType = .unknownError(error.localizedDescription)
+        }
+        
+        self.errorMessage = self.errorType?.localizedDescription
+    }
+    
+    /// Check for internet connectivity
+    private func checkConnectivity() {
+        // In a real app, this would check for actual network connectivity
+        // For now, we'll just assume we're online for testing
+        isOffline = false
+        
+        // For testing offline mode, uncomment this line:
+        // isOffline = true
     }
     
     // MARK: - Computed Properties
@@ -187,6 +302,9 @@ class TrainingPlanViewModel: ObservableObject {
     /// Force refresh all data
     func refreshAll() {
         logger.info("Performing full data refresh")
+        
+        // Check connectivity before refreshing
+        checkConnectivity()
         loadActivePlan()
     }
 }

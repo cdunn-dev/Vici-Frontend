@@ -36,6 +36,7 @@ This document outlines the comprehensive plan to fix all build issues in the Vic
 - ✅ TrainingPlanViewModel now connects to real data services
 - ✅ Comprehensive logging added to debug API connectivity
 - ✅ Pull-to-refresh and manual refresh functionality added
+- ✅ Enhanced error handling with typed errors and custom UI for different error states
 
 ## Next Steps: Real Implementation
 
@@ -56,6 +57,7 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Launch the app in the simulator with updated ViewModel ✅
    - [x] Add logging/debugging to verify API connectivity ✅
    - [x] Add refresh mechanism for manual data reload ✅
+   - [x] Enhance error handling in the UI ✅
    - [ ] Test that workouts load from the API properly
    - [ ] Implement weekly workout display
    - [ ] Add today's workout detail view
@@ -74,9 +76,9 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Test the updated view in the simulator ✅
    - [x] Add logging to debug API connectivity ✅
    - [x] Add refresh mechanism for manual data reload ✅
+   - [x] Enhance error handling in the UI ✅
    - [ ] Configure and verify backend API access
    - [ ] Debug any issues with API connectivity
-   - [ ] Enhance error handling in the UI
 
 2. **Move to other views**
    - [ ] Update AskViciView to use real data models
@@ -88,7 +90,7 @@ Now that we've successfully cleaned up the project structure and have a stable b
    - [x] Create branch for TrainingPlanView enhancements ✅
    - [x] Commit TrainingPlanViewModel updates ✅
    - [x] Push branch to remote repository ✅
-   - [ ] Commit UI enhancements with refresh functionality
+   - [ ] Commit UI enhancements with error handling
 
 ## Dependency Map (Updated)
 
@@ -107,6 +109,14 @@ This map documents the key interconnected components to ensure we address all de
   - ✅ Now connects to TrainingService for real API data
   - ✅ Enhanced with proper logging for debugging
   - ✅ Supports manual data refresh
+  - ✅ Improved error handling with typed errors
+
+### Views
+- `TrainingPlanView`: Used as a tab in MainTabView
+  - ✅ Connected to real data via TrainingPlanViewModel
+  - ✅ Supports pull-to-refresh
+  - ✅ Custom error handling with specific UI for different error types
+  - ✅ Offline mode support with appropriate UI feedback
 
 ### Services
 - `AuthService`: Used by `AuthViewModel`
@@ -141,6 +151,8 @@ This map documents the key interconnected components to ensure we address all de
 - [x] Verify builds succeed with real API connections ✅ 
 - [x] Add logging for API request debugging ✅
 - [x] Add data refresh functionality ✅
+- [x] Enhance error handling with typed errors ✅
+- [x] Implement UI for different error states ✅
 - [ ] Test that API requests function correctly
 - [ ] Verify data flows correctly from API to views
 - [ ] Handle loading states and error scenarios

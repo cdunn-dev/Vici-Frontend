@@ -26,22 +26,8 @@ struct TrainingPlanView: View {
             ZStack {
                 if viewModel.isLoading && !isRefreshing {
                     ProgressView("Loading your plan...")
-                } else if let errorMessage = viewModel.errorMessage {
-                    VStack {
-                        Text("Something went wrong")
-                            .font(.title)
-                            .padding(.bottom, 8)
-                        
-                        Text(errorMessage)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Button("Try Again") {
-                            viewModel.loadActivePlan()
-                        }
-                        .padding(.top, 16)
-                    }
-                    .padding()
+                } else if let errorType = viewModel.errorType {
+                    errorView(for: errorType)
                 } else {
                     mainContentView
                 }
@@ -73,6 +59,11 @@ struct TrainingPlanView: View {
             }
             .refreshable {
                 await refreshData()
+            }
+            .overlay(alignment: .top) {
+                if viewModel.isOffline {
+                    offlineBanner
+                }
             }
         }
     }
@@ -159,6 +150,174 @@ struct TrainingPlanView: View {
             .padding()
             .background(.ultraThinMaterial)
         }
+    }
+    
+    // MARK: - Error Views
+    
+    /// Returns the appropriate error view based on error type
+    @ViewBuilder
+    private func errorView(for errorType: TrainingPlanViewModelError) -> some View {
+        switch errorType {
+        case .networkError:
+            networkErrorView
+        case .noActivePlan:
+            noActivePlanView
+        case .authenticationError:
+            authErrorView
+        case .serverError, .unknownError:
+            genericErrorView
+        }
+    }
+    
+    /// Network error view shown when offline
+    private var networkErrorView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 50))
+                .foregroundColor(.secondary)
+            
+            Text("Network Connection Issue")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text(viewModel.errorMessage ?? "Unable to connect to the server. Please check your internet connection.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+            
+            // If we have cached data, show it
+            if viewModel.activePlan != nil {
+                Button("View Cached Data") {
+                    viewModel.errorType = nil
+                    viewModel.errorMessage = nil
+                }
+                .buttonStyle(.bordered)
+                .padding(.top)
+            }
+            
+            Button("Try Again") {
+                viewModel.refreshAll()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .frame(maxWidth: 300)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(16)
+    }
+    
+    /// No active plan error view
+    private var noActivePlanView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.system(size: 50))
+                .foregroundColor(.orange)
+            
+            Text("No Active Training Plan")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text(viewModel.errorMessage ?? "You don't have an active training plan. Create one to get started!")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+            
+            Button("Create New Plan") {
+                viewModel.showCreatePlan = true
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+        .padding()
+        .frame(maxWidth: 300)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(16)
+    }
+    
+    /// Authentication error view
+    private var authErrorView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "person.crop.circle.badge.exclamationmark")
+                .font(.system(size: 50))
+                .foregroundColor(.red)
+            
+            Text("Authentication Error")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text("Your session has expired. Please log in again to continue.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+            
+            Button("Log In") {
+                // In real app, this would navigate to login screen
+                // For now, just try to refresh
+                viewModel.refreshAll()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+        .padding()
+        .frame(maxWidth: 300)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(16)
+    }
+    
+    /// Generic error view for server or unknown errors
+    private var genericErrorView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 50))
+                .foregroundColor(.yellow)
+            
+            Text("Something Went Wrong")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text(viewModel.errorMessage ?? "An unexpected error occurred.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+            
+            Button("Try Again") {
+                viewModel.refreshAll()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+        .padding()
+        .frame(maxWidth: 300)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(16)
+    }
+    
+    /// Offline banner that appears at the top of the screen
+    private var offlineBanner: some View {
+        VStack {
+            HStack {
+                Image(systemName: "wifi.slash")
+                    .foregroundColor(.white)
+                
+                Text("You're offline. Showing cached data.")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button {
+                    viewModel.refreshAll()
+                } label: {
+                    Text("Retry")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(8)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color.orange)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Refresh Helper
