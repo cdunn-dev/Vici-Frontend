@@ -103,7 +103,11 @@ _(Status Legend: [ ] To Do, [/] In Progress, [x] Done)_
     - [x] Created real model preview extensions (Workout+Preview, TrainingPlan+Preview, Activity+Preview, User+Preview)
     - [x] Created migration guide (MOCK_TO_REAL_MIGRATION.md)
     - [/] Update view references from mock to real models
-  - [x] Implement direct API client for backend services
+      - [x] Implemented TrainingPlanView with real data model and error handling
+      - [x] Implemented AskViciView with real data model and comprehensive error handling
+      - [ ] Update ProfileView to use real user data
+      - [ ] Update StravaConnectView to use real StravaService
+    - [x] Implement direct API client for backend services
 - [/] Authentication screens (Connect to real backend)
   - [/] Login/Registration flow (UI exists, connecting to real API)
   - [x] Strava OAuth Connection flow
