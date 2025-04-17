@@ -51,12 +51,14 @@ class TrainingPlanViewModel: ObservableObject {
     init(trainingService: TrainingService = .shared, usePreviewData: Bool = false) {
         self.trainingService = trainingService
         
-        // Use preview data if requested or if in SwiftUI previews
+        // Preview data references seem invalid, remove them
+        // Rely on usePreviewData being false for normal operation
+        // If preview data is truly needed, re-add valid preview extensions to Models
         if usePreviewData || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            logger.info("Using preview data for TrainingPlanViewModel")
-            self.activePlan = TrainingPlan.samplePlan
-            self.workouts = Workout.previewWeek
-            self.todaysWorkout = Workout.previewTodaysWorkout
+            logger.info("Attempting to use preview data (ensure preview extensions exist and are valid)")
+            // self.activePlan = TrainingPlan.samplePlan // REMOVED
+            // self.workouts = Workout.previewWeek // REMOVED
+            // self.todaysWorkout = Workout.previewTodaysWorkout // REMOVED
         } else {
             logger.info("Initialized TrainingPlanViewModel with real data source")
         }
@@ -158,7 +160,7 @@ class TrainingPlanViewModel: ObservableObject {
     }
     
     /// Mark a workout as completed
-    func completeWorkout(id: String, notes: String? = nil) async {
+    func completeWorkout(id: String, notes: String? = nil) {
         // Skip API call if offline
         if isOffline {
             logger.warning("Device is offline, skipping API call")
@@ -175,43 +177,42 @@ class TrainingPlanViewModel: ObservableObject {
         
         logger.info("Marking workout as completed: \(id), notes: \(notes ?? "none")")
         
-        do {
-            let publisher = trainingService.completeWorkout(id: id, notes: notes)
-            let workout = try await publisher.async()
+        // Publisher needs to be handled within a Task for async context
+        Task { @MainActor [weak self] in // Use @MainActor Task
+             guard let self = self else { return }
+             do {
+                 let publisher = self.trainingService.completeWorkout(id: id, notes: notes)
+                 let workout = try await publisher.async()
             
-            // Update in our local lists
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.isLoading = false
-                self.logger.info("Successfully completed workout: \(id)")
+                 // Update in our local lists
+                 self.isLoading = false // Set loading false inside task on completion
+                 self.logger.info("Successfully completed workout: \(id)")
                 
-                // Update the workout in our list
-                if let index = self.workouts.firstIndex(where: { $0.id == id }) {
-                    self.workouts[index] = workout
-                    self.logger.debug("Updated workout in local list at index \(index)")
-                }
-                
-                // Update today's workout if it's the same one
-                if self.todaysWorkout?.id == id {
-                    self.todaysWorkout = workout
-                    self.logger.debug("Updated today's workout reference")
-                }
-                
-                // Update workout in the active plan if it exists
-                if var plan = self.activePlan, var planWorkouts = plan.workouts {
-                    if let index = planWorkouts.firstIndex(where: { $0.id == id }) {
-                        planWorkouts[index] = workout
-                        plan.workouts = planWorkouts
-                        self.activePlan = plan
-                    }
-                }
-            }
-        } catch {
-            DispatchQueue.main.async { [weak self] in
-                self?.isLoading = false
-                self?.handleError(error)
-            }
-        }
+                 // Update the workout in our list
+                 if let index = self.workouts.firstIndex(where: { $0.id == id }) {
+                     self.workouts[index] = workout
+                     self.logger.debug("Updated workout in local list at index \(index)")
+                 }
+                 
+                 // Update today's workout if it's the same one
+                 if self.todaysWorkout?.id == id {
+                     self.todaysWorkout = workout
+                     self.logger.debug("Updated today's workout reference")
+                 }
+                 
+                 // Update workout in the active plan if it exists
+                 if var plan = self.activePlan, var planWorkouts = plan.workouts {
+                     if let index = planWorkouts.firstIndex(where: { $0.id == id }) {
+                         planWorkouts[index] = workout
+                         plan.workouts = planWorkouts
+                         self.activePlan = plan
+                     }
+                 }
+             } catch {
+                 self.isLoading = false // Set loading false inside task on error
+                 self.handleError(error)
+             }
+         }
     }
     
     // MARK: - Helper Methods
@@ -251,11 +252,16 @@ class TrainingPlanViewModel: ObservableObject {
                 self.errorType = .authenticationError
             case .serverError(let code, let message):
                 self.errorType = .serverError("Server error \(code): \(message)")
+            case .httpError(let statusCode, let details): // Correct tuple pattern
+                let message = details ?? "No details provided"
+                self.errorType = .serverError("Server error \(statusCode): \(message)")
             default:
-                self.errorType = .unknownError(error.localizedDescription)
+                // Convert generic error to string for display
+                self.errorType = .unknownError(error.localizedDescription) 
             }
         } else {
-            self.errorType = .unknownError(error.localizedDescription)
+            // Convert generic error to string for display
+            self.errorType = .unknownError(error.localizedDescription) 
         }
         
         self.errorMessage = self.errorType?.localizedDescription

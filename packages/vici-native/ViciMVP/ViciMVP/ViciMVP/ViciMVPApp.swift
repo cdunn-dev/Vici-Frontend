@@ -1,57 +1,39 @@
 import SwiftUI
+import UIKit
 
-// User authentication model
-class UserAuthentication: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    
-    let authService = AuthenticationService()
-    
-    init() {
-        // Set up observers for the auth service
-        authService.$isAuthenticated
-            .assign(to: &$isAuthenticated)
-        
-        authService.$currentUser
-            .assign(to: &$currentUser)
-            
-        authService.$isLoading
-            .assign(to: &$isLoading)
-            
-        authService.$errorMessage
-            .assign(to: &$errorMessage)
+// Handle URL callbacks for OAuth flow
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        print("Application did finish launching")
+        return true
     }
     
-    func login(email: String, password: String) {
-        authService.login(email: email, password: password)
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        print("Received URL: \(url.absoluteString)")
+        return false
     }
-    
-    func register(email: String, password: String, name: String = "") {
-        authService.register(email: email, password: password, name: name)
-    }
-    
-    func logout() {
-        authService.logout()
-    }
+}
+
+// Notification names for Strava callbacks
+extension Notification.Name {
+    static let stravaCallbackReceived = Notification.Name("com.vici.app.stravaCallbackReceived")
+    static let stravaCallbackFailed = Notification.Name("com.vici.app.stravaCallbackFailed")
 }
 
 @main
 struct ViciMVPApp: App {
-    @StateObject private var userAuth = UserAuthentication()
-    @StateObject private var trainingPlanService = TrainingPlanService()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var authViewModel = SimpleAuthViewModel()
     
     var body: some Scene {
         WindowGroup {
-            if userAuth.isAuthenticated {
+            if authViewModel.isLoggedIn {
                 MainTabView()
-                    .environmentObject(userAuth)
-                    .environmentObject(trainingPlanService)
+                .environmentObject(authViewModel)
             } else {
-                AuthenticationView()
-                    .environmentObject(userAuth)
+                SimpleAuthView()
+                .environmentObject(authViewModel)
             }
         }
     }
-} 
+}

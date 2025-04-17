@@ -7,7 +7,7 @@ import Foundation
 /// Preview extensions for the TrainingPlan model to help with the transition from mock data
 extension TrainingPlan {
     /// A sample training plan for previews
-    static var samplePlan: TrainingPlan {
+    static var previewPlan: TrainingPlan {
         let calendar = Calendar.current
         let today = Date()
         
@@ -29,8 +29,8 @@ extension TrainingPlan {
     
     /// A sample training plan with workouts for previews
     static var samplePlanWithWorkouts: TrainingPlan {
-        var plan = samplePlan
-        plan.workouts = Workout.previewWeek
+        var plan = previewPlan
+        plan.workouts = Workout.previewWorkouts
         return plan
     }
     
@@ -69,22 +69,6 @@ extension TrainingPlan {
                 isCompleted: true,
                 createdAt: calendar.date(byAdding: .day, value: -100, to: today)!,
                 updatedAt: calendar.date(byAdding: .day, value: -34, to: today)!,
-                workouts: nil
-            ),
-            
-            // Preview plan (not yet active)
-            TrainingPlan(
-                id: "plan-3",
-                userId: "user-1",
-                name: "Marathon Training",
-                description: "16-week training plan for a marathon",
-                goal: "Complete the Fall Marathon",
-                startDate: calendar.date(byAdding: .day, value: 70, to: today)!,
-                endDate: calendar.date(byAdding: .day, value: 182, to: today)!,
-                isActive: false,
-                isCompleted: false,
-                createdAt: calendar.date(byAdding: .day, value: -5, to: today)!,
-                updatedAt: calendar.date(byAdding: .day, value: -5, to: today)!,
                 workouts: nil
             )
         ]

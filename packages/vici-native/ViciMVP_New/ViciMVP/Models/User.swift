@@ -10,7 +10,7 @@ struct User: Codable, Identifiable {
     var updatedAt: Date?
     
     // Related entities
-    var settings: UserSettings
+    var settings: UserSettings?
     var runnerProfile: RunnerProfile?
     var stravaConnection: StravaConnection?
     
@@ -24,6 +24,75 @@ struct User: Codable, Identifiable {
         case settings
         case runnerProfile
         case stravaConnection
+    }
+    
+    // Computed properties for the UI
+    var isStravaConnected: Bool {
+        return stravaConnection?.connected == true
+    }
+    
+    var profilePictureUrl: String? {
+        // If we have a Strava connection, check for profile picture
+        if let athleteInfo = stravaConnection?.athleteInfo as? [String: Any],
+           let profile = athleteInfo["profile"] as? String {
+            return profile
+        }
+        return nil
+    }
+    
+    var displayName: String {
+        if let name = name, !name.isEmpty {
+            return name
+        }
+        return email.components(separatedBy: "@").first ?? email
+    }
+    
+    var experienceLevel: String {
+        return runnerProfile?.experienceLevel.rawValue ?? "Not set"
+    }
+    
+    // Preview data for development and testing
+    static var previewUser: User {
+        User(
+            id: "user123",
+            email: "runner@example.com",
+            name: "Test Runner",
+            createdAt: Date(),
+            updatedAt: Date(),
+            settings: UserSettings(
+                id: "settings123",
+                userId: "user123",
+                distanceUnit: .km,
+                language: "en",
+                coachingStyle: .balanced,
+                notificationPreferences: NotificationPreferences(
+                    id: "notif123",
+                    email: true,
+                    push: true,
+                    sms: false,
+                    inApp: true
+                ),
+                privacyDataSharing: true
+            ),
+            runnerProfile: RunnerProfile(
+                id: "profile123",
+                userId: "user123",
+                experienceLevel: .intermediate,
+                weeklyRunningFrequency: 4,
+                weeklyRunningDistanceKm: 40,
+                typicalPaceMinPerKm: 5 * 60,
+                recentRaces: [],
+                primaryGoal: "Run a marathon",
+                injuries: [],
+                maxHR: 185,
+                restingHR: 65,
+                dateOfBirth: Calendar.current.date(byAdding: .year, value: -30, to: Date()),
+                weight: 70.5,
+                height: 175.0,
+                sex: .preferNotToSay
+            ),
+            stravaConnection: nil
+        )
     }
 }
 

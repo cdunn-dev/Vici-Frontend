@@ -1,5 +1,33 @@
 import Foundation
 
+// MARK: - Response Structs for LLMService
+
+struct PlanResponse: Decodable {
+    let plan: TrainingPlan
+}
+
+struct AnswerResponse: Decodable {
+    let answer: String
+}
+
+// Placeholder struct to make ProposedChangesResponse Decodable
+struct ProposedChangesData: Decodable {
+    // Define properties here if/when the structure is known
+}
+
+struct ProposedChangesResponse: Decodable {
+    // Use the specific Decodable struct
+    let proposedChanges: ProposedChangesData 
+}
+
+struct TipResponse: Decodable {
+    let tip: String
+}
+
+struct AnalysisResponse: Decodable {
+    let analysis: String
+}
+
 /// Service for interacting with the LLM (Large Language Model) for intelligent features
 class LLMService {
     // MARK: - Singleton
@@ -22,7 +50,7 @@ class LLMService {
         weeklyFrequency: Int,
         additionalInfo: String? = nil
     ) async throws -> TrainingPlan {
-        guard authService.isLoggedIn() else {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
@@ -36,17 +64,18 @@ class LLMService {
             "additionalInfo": additionalInfo ?? ""
         ]
         
-        let response: [String: Any] = try await apiClient.post(
-            endpoint: "/training/generate-plan",
-            body: requestBody
-        )
-        
-        // Parse training plan from response
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: response)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(TrainingPlan.self, from: jsonData)
+            let response: APIResponse<TrainingPlan> = try await apiClient.post(
+                endpoint: "/training/generate-plan",
+                body: requestBody
+            )
+            
+            guard let plan = response.data else {
+                 throw APIError.invalidResponseData
+            }
+            return plan
+        } catch let error as APIError {
+            throw error
         } catch {
             throw APIError.decodingError("Failed to decode training plan: \(error.localizedDescription)")
         }
@@ -56,7 +85,7 @@ class LLMService {
     
     /// Ask Vici a general running/training question
     func askGeneralQuestion(question: String) async throws -> String {
-        guard authService.isLoggedIn() else {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
@@ -64,23 +93,28 @@ class LLMService {
             "question": question
         ]
         
-        let response: [String: Any] = try await apiClient.post(
-            endpoint: "/training/ask",
-            body: requestBody
-        )
-        
-        guard let answer = response["answer"] as? String else {
-            throw APIError.decodingError("Invalid response format")
+        do {
+            let response: APIResponse<AnswerResponse> = try await apiClient.post(
+                endpoint: "/training/ask",
+                body: requestBody
+            )
+            
+            guard let answer = response.data?.answer else {
+                throw APIError.invalidResponseData
+            }
+            return answer
+        } catch let error as APIError {
+            throw error
+        } catch {
+            throw APIError.decodingError("Failed to decode answer response: \(error.localizedDescription)")
         }
-        
-        return answer
     }
     
     // MARK: - Plan-specific Questions
     
     /// Ask Vici about a specific training plan
     func askAboutPlan(planId: String, question: String) async throws -> String {
-        guard authService.isLoggedIn() else {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
@@ -88,16 +122,21 @@ class LLMService {
             "question": question
         ]
         
-        let response: [String: Any] = try await apiClient.post(
-            endpoint: "/training/plans/\(planId)/ask-vici",
-            body: requestBody
-        )
-        
-        guard let answer = response["answer"] as? String else {
-            throw APIError.decodingError("Invalid response format")
+        do {
+            let response: APIResponse<AnswerResponse> = try await apiClient.post(
+                endpoint: "/training/plans/\(planId)/ask-vici",
+                body: requestBody
+            )
+            
+            guard let answer = response.data?.answer else {
+                throw APIError.invalidResponseData
+            }
+            return answer
+        } catch let error as APIError {
+            throw error
+        } catch {
+             throw APIError.decodingError("Failed to decode plan question answer response: \(error.localizedDescription)")
         }
-        
-        return answer
     }
     
     // MARK: - Plan Adjustments
@@ -107,8 +146,8 @@ class LLMService {
         planId: String,
         adjustmentRequest: String,
         reason: String? = nil
-    ) async throws -> [String: Any] {
-        guard authService.isLoggedIn() else {
+    ) async throws -> ProposedChangesData {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
@@ -117,21 +156,26 @@ class LLMService {
             "reason": reason ?? ""
         ]
         
-        let response: [String: Any] = try await apiClient.post(
-            endpoint: "/training/plans/\(planId)/ask-vici",
-            body: requestBody
-        )
-        
-        guard let proposedChanges = response["proposedChanges"] as? [String: Any] else {
-            throw APIError.decodingError("Invalid response format")
+        do {
+            let response: APIResponse<ProposedChangesResponse> = try await apiClient.post(
+                endpoint: "/training/plans/\(planId)/ask-vici",
+                body: requestBody
+            )
+            
+            guard let changes = response.data?.proposedChanges else {
+                throw APIError.invalidResponseData
+            }
+            return changes
+        } catch let error as APIError {
+             throw error
+        } catch {
+             throw APIError.decodingError("Failed to decode proposed changes response: \(error.localizedDescription)")
         }
-        
-        return proposedChanges
     }
     
     /// Approve proposed changes to a training plan
     func approvePlanChanges(planId: String, changeId: String) async throws -> TrainingPlan {
-        guard authService.isLoggedIn() else {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
@@ -139,17 +183,18 @@ class LLMService {
             "changeId": changeId
         ]
         
-        let response: [String: Any] = try await apiClient.post(
-            endpoint: "/training/plans/\(planId)/approve-changes",
-            body: requestBody
-        )
-        
-        // Parse updated training plan
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: response)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(TrainingPlan.self, from: jsonData)
+            let response: APIResponse<TrainingPlan> = try await apiClient.post(
+                endpoint: "/training/plans/\(planId)/approve-changes",
+                body: requestBody
+            )
+            
+            guard let plan = response.data else {
+                throw APIError.invalidResponseData
+            }
+            return plan
+        } catch let error as APIError {
+            throw error
         } catch {
             throw APIError.decodingError("Failed to decode updated training plan: \(error.localizedDescription)")
         }
@@ -159,37 +204,47 @@ class LLMService {
     
     /// Get AI analysis of a completed workout
     func analyzeWorkout(workoutId: String) async throws -> String {
-        guard authService.isLoggedIn() else {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
-        let response: [String: Any] = try await apiClient.get(
-            endpoint: "/training/workouts/\(workoutId)/analyze"
-        )
-        
-        guard let analysis = response["analysis"] as? String else {
-            throw APIError.decodingError("Invalid response format")
+        do {
+            let response: APIResponse<AnalysisResponse> = try await apiClient.get(
+                endpoint: "/training/workouts/\(workoutId)/analyze"
+            )
+            
+            guard let analysis = response.data?.analysis else {
+                throw APIError.invalidResponseData
+            }
+            return analysis
+        } catch let error as APIError {
+             throw error
+        } catch {
+             throw APIError.decodingError("Failed to decode workout analysis response: \(error.localizedDescription)")
         }
-        
-        return analysis
     }
     
     // MARK: - Training Tips
     
     /// Get a personalized training tip
     func getDailyTrainingTip() async throws -> String {
-        guard authService.isLoggedIn() else {
+        guard authService.isAuthenticated else {
             throw APIError.unauthorized
         }
         
-        let response: [String: Any] = try await apiClient.get(
-            endpoint: "/training/tip"
-        )
-        
-        guard let tip = response["tip"] as? String else {
-            throw APIError.decodingError("Invalid response format")
+        do {
+            let response: APIResponse<TipResponse> = try await apiClient.get(
+                endpoint: "/training/tip"
+            )
+            
+            guard let tip = response.data?.tip else {
+                throw APIError.invalidResponseData
+            }
+            return tip
+        } catch let error as APIError {
+            throw error
+        } catch {
+            throw APIError.decodingError("Failed to decode training tip response: \(error.localizedDescription)")
         }
-        
-        return tip
     }
 } 

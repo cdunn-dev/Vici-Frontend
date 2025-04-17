@@ -1,0 +1,649 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 70;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8A56F4312ACFD0A7001D64B6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A56F4302ACFD0A7001D64B6 /* Assets.xcassets */; };
+		8A56F4342ACFD0A7001D64B6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A56F4332ACFD0A7001D64B6 /* Preview Assets.xcassets */; };
+		E54B04572DAFAF0C00F1B05C /* ViciMVPApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04262DAFAD5400F1B05C /* ViciMVPApp.swift */; };
+		E54B04582DAFAF1300F1B05C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B040F2DAFAD5400F1B05C /* AppDelegate.swift */; };
+		E54B04592DAFAF1900F1B05C /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04102DAFAD5400F1B05C /* MainTabView.swift */; };
+		E54B045A2DAFAF3100F1B05C /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04282DAFAD5400F1B05C /* AuthViewModel.swift */; };
+		E54B045B2DAFAF3100F1B05C /* AuthViewModelProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04292DAFAD5400F1B05C /* AuthViewModelProtocol.swift */; };
+		E54B045C2DAFAF3100F1B05C /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04302DAFAD5400F1B05C /* AuthView.swift */; };
+		E54B045D2DAFAF3D00F1B05C /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B041E2DAFAD5400F1B05C /* AuthService.swift */; };
+		E54B045E2DAFAF4900F1B05C /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B041C2DAFAD5400F1B05C /* APIClient.swift */; };
+		E54B045F2DAFAF4900F1B05C /* APIClientProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B041D2DAFAD5400F1B05C /* APIClientProtocol.swift */; };
+		E54B04602DAFAF5300F1B05C /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B041F2DAFAD5400F1B05C /* KeychainService.swift */; };
+		E54B04612DAFAF5D00F1B05C /* StravaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04232DAFAD5400F1B05C /* StravaService.swift */; };
+		E54B04622DAFAF6700F1B05C /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04162DAFAD5400F1B05C /* User.swift */; };
+		E54B04632DAFAF7000F1B05C /* ViciResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04182DAFAD5400F1B05C /* ViciResponse.swift */; };
+		E54B04652DAFAF7E00F1B05C /* StravaError.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B03DB2DAEBB1100F1B05C /* StravaError.swift */; };
+		E54B04662DAFAFA200F1B05C /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04312DAFAD5400F1B05C /* ProfileView.swift */; };
+		E54B04672DAFAFB700F1B05C /* StravaConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04322DAFAD5400F1B05C /* StravaConnectView.swift */; };
+		E54B04682DAFAFC100F1B05C /* TrainingPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B042D2DAFAD5400F1B05C /* TrainingPlanViewModel.swift */; };
+		E54B04692DAFAFC900F1B05C /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B042A2DAFAD5400F1B05C /* ProfileViewModel.swift */; };
+		E54B046A2DAFAFD000F1B05C /* AskViciViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04272DAFAD5400F1B05C /* AskViciViewModel.swift */; };
+		E54B046B2DAFAFD900F1B05C /* StravaConnectViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B042C2DAFAD5400F1B05C /* StravaConnectViewModel.swift */; };
+		E54B046C2DAFAFE200F1B05C /* UserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B042E2DAFAD5400F1B05C /* UserViewModel.swift */; };
+		E54B046D2DAFAFEC00F1B05C /* TrainingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04242DAFAD5400F1B05C /* TrainingService.swift */; };
+		E54B046E2DAFAFF300F1B05C /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04202DAFAD5400F1B05C /* LLMService.swift */; };
+		E54B046F2DAFAFFD00F1B05C /* TrainingPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04142DAFAD5400F1B05C /* TrainingPlan.swift */; };
+		E54B04702DAFB00200F1B05C /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04192DAFAD5400F1B05C /* Workout.swift */; };
+		E54B04712DAFB00A00F1B05C /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04112DAFAD5400F1B05C /* Activity.swift */; };
+		E54B04732DAFB1EA00F1B05C /* AskViciView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04722DAFB1EA00F1B05C /* AskViciView.swift */; };
+		E54B04752DAFB1F800F1B05C /* TrainingPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04742DAFB1F800F1B05C /* TrainingPlanView.swift */; };
+		E54B04772DAFB9D000F1B05C /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B04762DAFB9D000F1B05C /* APIError.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E54B03E82DAEBD4500F1B05C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8A56F4212ACFD0A5001D64B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A56F4282ACFD0A5001D64B6;
+			remoteInfo = ViciMVP;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		8A56F4292ACFD0A5001D64B6 /* ViciMVP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ViciMVP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A56F4302ACFD0A7001D64B6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = ViciMVP/Assets.xcassets; sourceTree = "<group>"; };
+		8A56F4332ACFD0A7001D64B6 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		8A56F4352ACFD0A7001D64B6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ViciMVP/Info.plist; sourceTree = "<group>"; };
+		E54B03DB2DAEBB1100F1B05C /* StravaError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaError.swift; sourceTree = "<group>"; };
+		E54B03E42DAEBD4500F1B05C /* ViciMVPTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ViciMVPTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E54B040F2DAFAD5400F1B05C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ViciMVP/AppDelegate.swift; sourceTree = "<group>"; };
+		E54B04102DAFAD5400F1B05C /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MainTabView.swift; path = ViciMVP/MainTabView.swift; sourceTree = "<group>"; };
+		E54B04112DAFAD5400F1B05C /* Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
+		E54B04122DAFAD5400F1B05C /* Activity+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Activity+Preview.swift"; sourceTree = "<group>"; };
+		E54B04132DAFAD5400F1B05C /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
+		E54B04142DAFAD5400F1B05C /* TrainingPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlan.swift; sourceTree = "<group>"; };
+		E54B04152DAFAD5400F1B05C /* TrainingPlan+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrainingPlan+Preview.swift"; sourceTree = "<group>"; };
+		E54B04162DAFAD5400F1B05C /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		E54B04172DAFAD5400F1B05C /* User+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "User+Preview.swift"; sourceTree = "<group>"; };
+		E54B04182DAFAD5400F1B05C /* ViciResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViciResponse.swift; sourceTree = "<group>"; };
+		E54B04192DAFAD5400F1B05C /* Workout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
+		E54B041A2DAFAD5400F1B05C /* Workout+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workout+Preview.swift"; sourceTree = "<group>"; };
+		E54B041C2DAFAD5400F1B05C /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		E54B041D2DAFAD5400F1B05C /* APIClientProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientProtocol.swift; sourceTree = "<group>"; };
+		E54B041E2DAFAD5400F1B05C /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		E54B041F2DAFAD5400F1B05C /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		E54B04202DAFAD5400F1B05C /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
+		E54B04212DAFAD5400F1B05C /* MockAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAuthService.swift; sourceTree = "<group>"; };
+		E54B04222DAFAD5400F1B05C /* MockKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockKeychainService.swift; sourceTree = "<group>"; };
+		E54B04232DAFAD5400F1B05C /* StravaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaService.swift; sourceTree = "<group>"; };
+		E54B04242DAFAD5400F1B05C /* TrainingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingService.swift; sourceTree = "<group>"; };
+		E54B04262DAFAD5400F1B05C /* ViciMVPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViciMVPApp.swift; path = ViciMVP/ViciMVPApp.swift; sourceTree = "<group>"; };
+		E54B04272DAFAD5400F1B05C /* AskViciViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskViciViewModel.swift; sourceTree = "<group>"; };
+		E54B04282DAFAD5400F1B05C /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		E54B04292DAFAD5400F1B05C /* AuthViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModelProtocol.swift; sourceTree = "<group>"; };
+		E54B042A2DAFAD5400F1B05C /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
+		E54B042B2DAFAD5400F1B05C /* SimpleAuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleAuthViewModel.swift; sourceTree = "<group>"; };
+		E54B042C2DAFAD5400F1B05C /* StravaConnectViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaConnectViewModel.swift; sourceTree = "<group>"; };
+		E54B042D2DAFAD5400F1B05C /* TrainingPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanViewModel.swift; sourceTree = "<group>"; };
+		E54B042E2DAFAD5400F1B05C /* UserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserViewModel.swift; sourceTree = "<group>"; };
+		E54B04302DAFAD5400F1B05C /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		E54B04312DAFAD5400F1B05C /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		E54B04322DAFAD5400F1B05C /* StravaConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaConnectView.swift; sourceTree = "<group>"; };
+		E54B04332DAFAD5400F1B05C /* StravaConnectView_Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaConnectView_Previews.swift; sourceTree = "<group>"; };
+		E54B04722DAFB1EA00F1B05C /* AskViciView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AskViciView.swift; path = ../AskViciView.swift; sourceTree = "<group>"; };
+		E54B04742DAFB1F800F1B05C /* TrainingPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TrainingPlanView.swift; path = ../TrainingPlanView.swift; sourceTree = "<group>"; };
+		E54B04762DAFB9D000F1B05C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		E54B03E52DAEBD4500F1B05C /* ViciMVPTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ViciMVPTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8A56F4262ACFD0A5001D64B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E54B03E12DAEBD4500F1B05C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8A56F4202ACFD0A5001D64B6 = {
+			isa = PBXGroup;
+			children = (
+				E54B040F2DAFAD5400F1B05C /* AppDelegate.swift */,
+				E54B04102DAFAD5400F1B05C /* MainTabView.swift */,
+				E54B04262DAFAD5400F1B05C /* ViciMVPApp.swift */,
+				E54B041B2DAFAD5400F1B05C /* Models */,
+				E54B04252DAFAD5400F1B05C /* Services */,
+				E54B042F2DAFAD5400F1B05C /* ViewModels */,
+				E54B04342DAFAD5400F1B05C /* Views */,
+				E54B03DC2DAEBB1100F1B05C /* Errors */,
+				E54B03E52DAEBD4500F1B05C /* ViciMVPTests */,
+				8A56F42A2ACFD0A5001D64B6 /* Products */,
+				8A56F4302ACFD0A7001D64B6 /* Assets.xcassets */,
+				8A56F4352ACFD0A7001D64B6 /* Info.plist */,
+				8A56F4322ACFD0A7001D64B6 /* Preview Content */,
+			);
+			sourceTree = "<group>";
+		};
+		8A56F42A2ACFD0A5001D64B6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8A56F4292ACFD0A5001D64B6 /* ViciMVP.app */,
+				E54B03E42DAEBD4500F1B05C /* ViciMVPTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8A56F4322ACFD0A7001D64B6 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				8A56F4332ACFD0A7001D64B6 /* Preview Assets.xcassets */,
+			);
+			name = "Preview Content";
+			path = "ViciMVP/Preview Content";
+			sourceTree = "<group>";
+		};
+		E54B03DC2DAEBB1100F1B05C /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+				E54B03DB2DAEBB1100F1B05C /* StravaError.swift */,
+			);
+			path = Errors;
+			sourceTree = "<group>";
+		};
+		E54B041B2DAFAD5400F1B05C /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E54B04112DAFAD5400F1B05C /* Activity.swift */,
+				E54B04122DAFAD5400F1B05C /* Activity+Preview.swift */,
+				E54B04132DAFAD5400F1B05C /* Test.swift */,
+				E54B04142DAFAD5400F1B05C /* TrainingPlan.swift */,
+				E54B04152DAFAD5400F1B05C /* TrainingPlan+Preview.swift */,
+				E54B04162DAFAD5400F1B05C /* User.swift */,
+				E54B04172DAFAD5400F1B05C /* User+Preview.swift */,
+				E54B04182DAFAD5400F1B05C /* ViciResponse.swift */,
+				E54B04192DAFAD5400F1B05C /* Workout.swift */,
+				E54B041A2DAFAD5400F1B05C /* Workout+Preview.swift */,
+			);
+			name = Models;
+			path = ViciMVP/Models;
+			sourceTree = "<group>";
+		};
+		E54B04252DAFAD5400F1B05C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				E54B04762DAFB9D000F1B05C /* APIError.swift */,
+				E54B041C2DAFAD5400F1B05C /* APIClient.swift */,
+				E54B041D2DAFAD5400F1B05C /* APIClientProtocol.swift */,
+				E54B041E2DAFAD5400F1B05C /* AuthService.swift */,
+				E54B041F2DAFAD5400F1B05C /* KeychainService.swift */,
+				E54B04202DAFAD5400F1B05C /* LLMService.swift */,
+				E54B04212DAFAD5400F1B05C /* MockAuthService.swift */,
+				E54B04222DAFAD5400F1B05C /* MockKeychainService.swift */,
+				E54B04232DAFAD5400F1B05C /* StravaService.swift */,
+				E54B04242DAFAD5400F1B05C /* TrainingService.swift */,
+			);
+			name = Services;
+			path = ViciMVP/Services;
+			sourceTree = "<group>";
+		};
+		E54B042F2DAFAD5400F1B05C /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				E54B04272DAFAD5400F1B05C /* AskViciViewModel.swift */,
+				E54B04282DAFAD5400F1B05C /* AuthViewModel.swift */,
+				E54B04292DAFAD5400F1B05C /* AuthViewModelProtocol.swift */,
+				E54B042A2DAFAD5400F1B05C /* ProfileViewModel.swift */,
+				E54B042B2DAFAD5400F1B05C /* SimpleAuthViewModel.swift */,
+				E54B042C2DAFAD5400F1B05C /* StravaConnectViewModel.swift */,
+				E54B042D2DAFAD5400F1B05C /* TrainingPlanViewModel.swift */,
+				E54B042E2DAFAD5400F1B05C /* UserViewModel.swift */,
+			);
+			name = ViewModels;
+			path = ViciMVP/ViewModels;
+			sourceTree = "<group>";
+		};
+		E54B04342DAFAD5400F1B05C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E54B04742DAFB1F800F1B05C /* TrainingPlanView.swift */,
+				E54B04722DAFB1EA00F1B05C /* AskViciView.swift */,
+				E54B04302DAFAD5400F1B05C /* AuthView.swift */,
+				E54B04312DAFAD5400F1B05C /* ProfileView.swift */,
+				E54B04322DAFAD5400F1B05C /* StravaConnectView.swift */,
+				E54B04332DAFAD5400F1B05C /* StravaConnectView_Previews.swift */,
+			);
+			name = Views;
+			path = ViciMVP/Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8A56F4282ACFD0A5001D64B6 /* ViciMVP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A56F4382ACFD0A7001D64B6 /* Build configuration list for PBXNativeTarget "ViciMVP" */;
+			buildPhases = (
+				8A56F4252ACFD0A5001D64B6 /* Sources */,
+				8A56F4262ACFD0A5001D64B6 /* Frameworks */,
+				8A56F4272ACFD0A5001D64B6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ViciMVP;
+			productName = ViciMVP;
+			productReference = 8A56F4292ACFD0A5001D64B6 /* ViciMVP.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E54B03E32DAEBD4500F1B05C /* ViciMVPTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E54B03EA2DAEBD4500F1B05C /* Build configuration list for PBXNativeTarget "ViciMVPTests" */;
+			buildPhases = (
+				E54B03E02DAEBD4500F1B05C /* Sources */,
+				E54B03E12DAEBD4500F1B05C /* Frameworks */,
+				E54B03E22DAEBD4500F1B05C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E54B03E92DAEBD4500F1B05C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E54B03E52DAEBD4500F1B05C /* ViciMVPTests */,
+			);
+			name = ViciMVPTests;
+			packageProductDependencies = (
+			);
+			productName = ViciMVPTests;
+			productReference = E54B03E42DAEBD4500F1B05C /* ViciMVPTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8A56F4212ACFD0A5001D64B6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					8A56F4282ACFD0A5001D64B6 = {
+						CreatedOnToolsVersion = 13.4;
+					};
+					E54B03E32DAEBD4500F1B05C = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 8A56F4282ACFD0A5001D64B6;
+					};
+				};
+			};
+			buildConfigurationList = 8A56F4242ACFD0A5001D64B6 /* Build configuration list for PBXProject "ViciMVP" */;
+			compatibilityVersion = "Xcode 13.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8A56F4202ACFD0A5001D64B6;
+			productRefGroup = 8A56F42A2ACFD0A5001D64B6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8A56F4282ACFD0A5001D64B6 /* ViciMVP */,
+				E54B03E32DAEBD4500F1B05C /* ViciMVPTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8A56F4272ACFD0A5001D64B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8A56F4342ACFD0A7001D64B6 /* Preview Assets.xcassets in Resources */,
+				8A56F4312ACFD0A7001D64B6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E54B03E22DAEBD4500F1B05C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8A56F4252ACFD0A5001D64B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E54B04772DAFB9D000F1B05C /* APIError.swift in Sources */,
+				E54B04752DAFB1F800F1B05C /* TrainingPlanView.swift in Sources */,
+				E54B04732DAFB1EA00F1B05C /* AskViciView.swift in Sources */,
+				E54B04712DAFB00A00F1B05C /* Activity.swift in Sources */,
+				E54B04702DAFB00200F1B05C /* Workout.swift in Sources */,
+				E54B046F2DAFAFFD00F1B05C /* TrainingPlan.swift in Sources */,
+				E54B046E2DAFAFF300F1B05C /* LLMService.swift in Sources */,
+				E54B046D2DAFAFEC00F1B05C /* TrainingService.swift in Sources */,
+				E54B046C2DAFAFE200F1B05C /* UserViewModel.swift in Sources */,
+				E54B046B2DAFAFD900F1B05C /* StravaConnectViewModel.swift in Sources */,
+				E54B046A2DAFAFD000F1B05C /* AskViciViewModel.swift in Sources */,
+				E54B04692DAFAFC900F1B05C /* ProfileViewModel.swift in Sources */,
+				E54B04682DAFAFC100F1B05C /* TrainingPlanViewModel.swift in Sources */,
+				E54B04672DAFAFB700F1B05C /* StravaConnectView.swift in Sources */,
+				E54B04662DAFAFA200F1B05C /* ProfileView.swift in Sources */,
+				E54B04652DAFAF7E00F1B05C /* StravaError.swift in Sources */,
+				E54B04632DAFAF7000F1B05C /* ViciResponse.swift in Sources */,
+				E54B04622DAFAF6700F1B05C /* User.swift in Sources */,
+				E54B04612DAFAF5D00F1B05C /* StravaService.swift in Sources */,
+				E54B04602DAFAF5300F1B05C /* KeychainService.swift in Sources */,
+				E54B045E2DAFAF4900F1B05C /* APIClient.swift in Sources */,
+				E54B045F2DAFAF4900F1B05C /* APIClientProtocol.swift in Sources */,
+				E54B045D2DAFAF3D00F1B05C /* AuthService.swift in Sources */,
+				E54B045A2DAFAF3100F1B05C /* AuthViewModel.swift in Sources */,
+				E54B045B2DAFAF3100F1B05C /* AuthViewModelProtocol.swift in Sources */,
+				E54B045C2DAFAF3100F1B05C /* AuthView.swift in Sources */,
+				E54B04592DAFAF1900F1B05C /* MainTabView.swift in Sources */,
+				E54B04572DAFAF0C00F1B05C /* ViciMVPApp.swift in Sources */,
+				E54B04582DAFAF1300F1B05C /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E54B03E02DAEBD4500F1B05C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E54B03E92DAEBD4500F1B05C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A56F4282ACFD0A5001D64B6 /* ViciMVP */;
+			targetProxy = E54B03E82DAEBD4500F1B05C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		8A56F4362ACFD0A7001D64B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8A56F4372ACFD0A7001D64B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8A56F4392ACFD0A7001D64B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ViciMVP/Preview Content\"";
+				DEVELOPMENT_TEAM = 7HHV4CG8QD;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ViciMVP/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vici.ViciMVP;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8A56F43A2ACFD0A7001D64B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ViciMVP/Preview Content\"";
+				DEVELOPMENT_TEAM = 7HHV4CG8QD;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ViciMVP/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vici.ViciMVP;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E54B03EB2DAEBD4500F1B05C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7HHV4CG8QD;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vici.ViciMVPTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ViciMVP.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ViciMVP";
+			};
+			name = Debug;
+		};
+		E54B03EC2DAEBD4500F1B05C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7HHV4CG8QD;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vici.ViciMVPTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ViciMVP.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ViciMVP";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8A56F4242ACFD0A5001D64B6 /* Build configuration list for PBXProject "ViciMVP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A56F4362ACFD0A7001D64B6 /* Debug */,
+				8A56F4372ACFD0A7001D64B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A56F4382ACFD0A7001D64B6 /* Build configuration list for PBXNativeTarget "ViciMVP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A56F4392ACFD0A7001D64B6 /* Debug */,
+				8A56F43A2ACFD0A7001D64B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E54B03EA2DAEBD4500F1B05C /* Build configuration list for PBXNativeTarget "ViciMVPTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E54B03EB2DAEBD4500F1B05C /* Debug */,
+				E54B03EC2DAEBD4500F1B05C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8A56F4212ACFD0A5001D64B6 /* Project object */;
+}

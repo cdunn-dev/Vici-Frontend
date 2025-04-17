@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os.log
 
 /// Service for managing training plans and workouts
 class TrainingService {
@@ -10,6 +11,9 @@ class TrainingService {
     
     /// API client for network requests
     private let apiClient: APIClient
+    
+    /// Logger for API operations
+    private let logger = Logger(subsystem: "com.vici.ViciMVP", category: "TrainingService")
     
     // MARK: - Initialization
     
@@ -292,22 +296,54 @@ class TrainingService {
     
     /// Get the active training plan for the current user
     func getActivePlan() async throws -> TrainingPlan? {
-        return try await apiClient.get(endpoint: "training/plans/active")
+        logger.debug("Requesting active training plan")
+        do {
+            let plan: TrainingPlan = try await apiClient.get(endpoint: "training/plans/active")
+            logger.debug("Successfully retrieved active plan: \(plan.id)")
+            return plan
+        } catch {
+            logger.error("Failed to get active plan: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Get workouts for a specific plan
     func getWorkouts(planId: String) async throws -> [Workout] {
-        return try await apiClient.get(endpoint: "training/plans/\(planId)/workouts")
+        logger.debug("Requesting workouts for plan: \(planId)")
+        do {
+            let workouts: [Workout] = try await apiClient.get(endpoint: "training/plans/\(planId)/workouts")
+            logger.debug("Successfully retrieved \(workouts.count) workouts for plan \(planId)")
+            return workouts
+        } catch {
+            logger.error("Failed to get workouts for plan \(planId): \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Create a plan preview using LLM with user preferences
     func createPlanPreview(_ planRequest: [String: Any]) async throws -> TrainingPlan {
-        return try await apiClient.post(endpoint: "training/plans/preview", body: planRequest)
+        logger.debug("Creating plan preview with preferences: \(planRequest.keys)")
+        do {
+            let plan: TrainingPlan = try await apiClient.post(endpoint: "training/plans/preview", body: planRequest)
+            logger.debug("Successfully created plan preview: \(plan.id)")
+            return plan
+        } catch {
+            logger.error("Failed to create plan preview: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Approve a plan preview to make it active
     func approvePlan(_ planId: String) async throws -> TrainingPlan {
-        return try await apiClient.post(endpoint: "training/plans/\(planId)/approve", body: nil)
+        logger.debug("Approving plan: \(planId)")
+        do {
+            let plan: TrainingPlan = try await apiClient.post(endpoint: "training/plans/\(planId)/approve", body: nil)
+            logger.debug("Successfully approved plan: \(plan.id)")
+            return plan
+        } catch {
+            logger.error("Failed to approve plan \(planId): \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Create a new training plan
@@ -326,7 +362,15 @@ class TrainingService {
             parameters["goal"] = goal
         }
         
-        return try await apiClient.post(endpoint: "training/plans", body: parameters)
+        logger.debug("Creating new training plan: \(name)")
+        do {
+            let plan: TrainingPlan = try await apiClient.post(endpoint: "training/plans", body: parameters)
+            logger.debug("Successfully created plan: \(plan.id)")
+            return plan
+        } catch {
+            logger.error("Failed to create training plan: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Mark a workout as completed
@@ -341,22 +385,48 @@ class TrainingService {
         }
         
         let endpoint = planId != nil ? "training/plans/\(planId!)/workouts/\(id)/complete" : "training/workouts/\(id)/complete"
-        return try await apiClient.put(endpoint: endpoint, body: parameters)
+        logger.debug("Marking workout \(id) as completed")
+        do {
+            let workout: Workout = try await apiClient.put(endpoint: endpoint, body: parameters)
+            logger.debug("Successfully marked workout as completed: \(workout.id)")
+            return workout
+        } catch {
+            logger.error("Failed to complete workout \(id): \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Get today's workout
     func getTodaysWorkout() async throws -> Workout? {
-        return try await apiClient.get(endpoint: "training/workouts/today")
+        logger.debug("Requesting today's workout")
+        do {
+            let workout: Workout = try await apiClient.get(endpoint: "training/workouts/today")
+            logger.debug("Successfully retrieved today's workout: \(workout.id)")
+            return workout
+        } catch {
+            logger.error("Failed to get today's workout: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Ask the AI coach a question about training
     func askVici(question: String, planId: String? = nil) async throws -> ViciResponse {
         var endpoint = "training/ask"
         if let planId = planId {
-            endpoint = "training/plans/\(planId)/ask"
+            endpoint = "training/plans/\(planId)/ask-vici"
+            logger.debug("Asking Vici about plan \(planId): \(question)")
+        } else {
+            logger.debug("Asking Vici general question: \(question)")
         }
         
-        return try await apiClient.post(endpoint: endpoint, body: ["query": question])
+        do {
+            let response: ViciResponse = try await apiClient.post(endpoint: endpoint, body: ["query": question])
+            logger.debug("Successfully received response from Vici")
+            return response
+        } catch {
+            logger.error("Failed to get response from Vici: \(error.localizedDescription)")
+            throw error
+        }
     }
 }
 

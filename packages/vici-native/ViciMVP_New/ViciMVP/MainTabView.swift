@@ -24,11 +24,37 @@ struct MainTabView: View {
                 }
             
             // Strava tab
-            StravaConnectView()
-                .environmentObject(authViewModel)
-                .tabItem {
-                    Label("Strava", systemImage: "arrow.triangle.2.circlepath")
+            NavigationView {
+                VStack {
+                    Text("Strava Connect")
+                        .font(.title)
+                        .padding()
+                    
+                    // Display connection status
+                    if authViewModel.isStravaConnected {
+                        Text("Connected to Strava")
+                            .foregroundColor(.green)
+                    } else {
+                        Text("Not connected to Strava")
+                            .foregroundColor(.red)
+                    }
+                    
+                    // Add connect/disconnect button
+                    Button(action: {
+                        authViewModel.updateStravaConnectionStatus(isConnected: !authViewModel.isStravaConnected)
+                    }) {
+                        Text(authViewModel.isStravaConnected ? "Disconnect" : "Connect")
+                            .padding()
+                            .background(authViewModel.isStravaConnected ? Color.red : Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                    .padding()
                 }
+            }
+            .tabItem {
+                Label("Strava", systemImage: "arrow.triangle.2.circlepath")
+            }
             
             // Ask Vici tab
             Text("Ask Vici")
@@ -39,12 +65,31 @@ struct MainTabView: View {
                 }
             
             // Profile tab
-            Text("Profile")
-                .font(.title)
-                .padding()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+            VStack {
+                Text("Profile")
+                    .font(.title)
+                    .padding()
+                
+                if let user = authViewModel.currentUser {
+                    Text("Welcome, \(user.name ?? "User")")
+                        .font(.headline)
+                } else {
+                    Text("No user logged in")
+                        .foregroundColor(.secondary)
                 }
+                
+                Button("Logout") {
+                    authViewModel.logout()
+                }
+                .padding()
+                .background(Color.red)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+                .padding()
+            }
+            .tabItem {
+                Label("Profile", systemImage: "person.fill")
+            }
         }
     }
 }
@@ -53,6 +98,6 @@ struct MainTabView: View {
 struct MainTabView_Previews: PreviewProvider {
     static var previews: some View {
         MainTabView()
-            .environmentObject(AuthViewModel.loggedInPreview())
+            .environmentObject(AuthViewModel(keychainService: KeychainService.shared))
     }
 }

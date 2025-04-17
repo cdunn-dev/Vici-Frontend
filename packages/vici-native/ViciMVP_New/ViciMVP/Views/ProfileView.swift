@@ -1,46 +1,34 @@
-//
-//  ProfileView.swift
-//  ViciMVP
-//
-//  Created on 15/07/2025
-//
-
 import SwiftUI
 
+/// View for displaying and editing user profile information
 struct ProfileView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
-    @State private var isEditingProfile = false
-    @State private var showingStravaConnect = false
+    @StateObject private var viewModel = ProfileViewModel()
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showingLogoutAlert = false
-    @State private var fullName = ""
-    @State private var email = ""
-    @State private var bio = ""
-    @State private var isLoading = false
-    @State private var errorMessage: String? = nil
-    
-    // Strava connection status
-    private var isStravaConnected: Bool {
-        return authViewModel.currentUser?.stravaConnected ?? false
-    }
+    @State private var showingStravaConnect = false
     
     var body: some View {
         NavigationView {
             ZStack {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Profile header with avatar and name
                         profileHeader
                         
-                        if isEditingProfile {
+                        if viewModel.isEditing {
+                            // Edit form when in edit mode
                             profileEditForm
                         } else {
+                            // View mode - display user info
                             profileInfoSection
                             
+                            // Strava connection card
                             stravaConnectionSection
                             
+                            // Settings and preferences
                             settingsSection
-                        }
-                        
-                        if !isEditingProfile {
+                            
+                            // Logout button
                             Button(action: {
                                 showingLogoutAlert = true
                             }) {
@@ -52,74 +40,94 @@ struct ProfileView: View {
                                     .cornerRadius(10)
                             }
                             .padding(.horizontal)
-                            .padding(.top, 24)
+                            .padding(.top, 8)
                         }
                     }
                     .padding(.bottom, 40)
                 }
-                .padding(.top, 1) // Fix ScrollView offset issue
+                .refreshable {
+                    viewModel.loadUserProfile()
+                }
                 
-                if isLoading {
+                // Loading overlay
+                if viewModel.isLoading {
                     Color.black.opacity(0.4)
                         .ignoresSafeArea()
                     ProgressView()
-                        .tint(.white)
                         .scaleEffect(1.5)
+                        .tint(.white)
+                }
+                
+                // Error alert
+                if let errorMessage = viewModel.errorMessage {
+                    VStack {
+                        Spacer()
+                        
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.white)
+                            
+                            Text(errorMessage)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                viewModel.errorMessage = nil
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding()
+                        .background(Color.red)
+                        .cornerRadius(10)
+                        .padding()
+                    }
                 }
             }
             .navigationTitle("Profile")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if isEditingProfile {
+                    if viewModel.isEditing {
                         Button("Save") {
                             saveProfile()
                         }
                     } else {
                         Button("Edit") {
-                            prepareForEditing()
+                            viewModel.startEditing()
                         }
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if isEditingProfile {
+                    if viewModel.isEditing {
                         Button("Cancel") {
-                            isEditingProfile = false
+                            viewModel.cancelEditing()
                         }
                     }
                 }
             }
-            .alert(isPresented: $showingLogoutAlert) {
-                Alert(
-                    title: Text("Log Out"),
-                    message: Text("Are you sure you want to log out?"),
-                    primaryButton: .destructive(Text("Log Out")) {
-                        authViewModel.logout()
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
-            .alert(item: Binding<IdentifiableAlert?>(
-                get: { errorMessage.map { IdentifiableAlert(message: $0) } },
-                set: { errorMessage = $0?.message }
-            )) { alert in
-                Alert(
-                    title: Text("Error"),
-                    message: Text(alert.message),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
-            .onAppear {
-                if !isEditingProfile {
-                    loadUserData()
+            .alert("Log Out", isPresented: $showingLogoutAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Log Out", role: .destructive) {
+                    logoutUser()
                 }
+            } message: {
+                Text("Are you sure you want to log out of your account?")
             }
             .sheet(isPresented: $showingStravaConnect) {
-                StravaConnectionView()
+                StravaConnectView()
+            }
+            .onAppear {
+                viewModel.loadUserProfile()
             }
         }
     }
     
+    // MARK: - View Components
+    
+    /// Profile header with avatar and name
     private var profileHeader: some View {
         VStack(spacing: 16) {
             // Profile image
@@ -128,18 +136,12 @@ struct ProfileView: View {
                     .fill(Color.orange)
                     .frame(width: 100, height: 100)
                 
-                if let initials = initialsFromName() {
-                    Text(initials)
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
-                } else {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                }
+                Text(viewModel.getInitials())
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundColor(.white)
                 
-                // Edit button shown only when not in edit mode
-                if !isEditingProfile {
+                // Edit indicator when not in edit mode
+                if !viewModel.isEditing {
                     Circle()
                         .fill(Color.blue)
                         .frame(width: 30, height: 30)
@@ -153,14 +155,13 @@ struct ProfileView: View {
             }
             .padding(.top, 20)
             
-            // User name
-            if !isEditingProfile {
-                Text(authViewModel.currentUser?.fullName ?? "Runner")
+            // User info
+            if !viewModel.isEditing {
+                Text(viewModel.displayName)
                     .font(.title)
                     .fontWeight(.bold)
                 
-                // User email
-                Text(authViewModel.currentUser?.email ?? "")
+                Text(viewModel.user?.email ?? "")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -169,18 +170,26 @@ struct ProfileView: View {
         .padding(.bottom, 10)
     }
     
+    /// Information section when viewing profile
     private var profileInfoSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Profile Information")
             
-            infoRow(title: "Name", value: authViewModel.currentUser?.fullName ?? "Not set")
-            infoRow(title: "Email", value: authViewModel.currentUser?.email ?? "Not set")
-            infoRow(title: "Bio", value: authViewModel.currentUser?.bio ?? "Add a short bio")
+            infoRow(title: "Name", value: viewModel.user?.name ?? "Not set")
+            infoRow(title: "Email", value: viewModel.user?.email ?? "")
             
-            if let joinDate = authViewModel.currentUser?.createdAt {
+            if let experienceLevel = viewModel.user?.experienceLevel {
+                infoRow(title: "Experience", value: experienceLevel)
+            }
+            
+            if let goal = viewModel.user?.runnerProfile?.primaryGoal {
+                infoRow(title: "Goal", value: goal)
+            }
+            
+            if let createdAt = viewModel.user?.createdAt {
                 let formatter = DateFormatter()
                 formatter.dateStyle = .medium
-                infoRow(title: "Joined", value: formatter.string(from: joinDate))
+                infoRow(title: "Joined", value: formatter.string(from: createdAt))
             }
         }
         .padding()
@@ -189,128 +198,103 @@ struct ProfileView: View {
         .padding(.horizontal)
     }
     
+    /// Form for editing profile information
+    private var profileEditForm: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader("Edit Profile")
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Name")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                TextField("Enter your name", text: $viewModel.name)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.bottom, 8)
+                
+                Text("Bio/Goal")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                TextEditor(text: $viewModel.bio)
+                    .frame(height: 100)
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.systemGray4))
+                    )
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+        }
+        .padding(.horizontal)
+    }
+    
+    /// Strava connection section
     private var stravaConnectionSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Strava Connection")
+            sectionHeader("Integrations")
             
-            HStack {
-                Image("strava-logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 30, height: 30)
-                    .foregroundColor(.orange)
-                
-                VStack(alignment: .leading) {
-                    Text(isStravaConnected ? "Connected to Strava" : "Not connected")
-                        .font(.headline)
-                    Text(isStravaConnected ? "Your activities are automatically synced" : "Connect to import your activities")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    if isStravaConnected {
-                        disconnectStrava()
-                    } else {
-                        showingStravaConnect = true
+            Button(action: {
+                showingStravaConnect = true
+            }) {
+                HStack {
+                    Image("strava_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 30, height: 30)
+                        .clipShape(Circle())
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Strava")
+                            .font(.headline)
+                        
+                        Text(viewModel.isStravaConnected ? "Connected" : "Connect to import activities")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                }) {
-                    Text(isStravaConnected ? "Disconnect" : "Connect")
-                        .font(.callout)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(isStravaConnected ? Color.red : Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
+                    
+                    Spacer()
+                    
+                    if viewModel.isStravaConnected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else {
+                        Image(systemName: "plus.circle")
+                            .foregroundColor(.blue)
+                    }
                 }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
             }
-            .padding(.vertical, 8)
+            .buttonStyle(PlainButtonStyle())
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
         .padding(.horizontal)
     }
     
+    /// Settings section
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Settings")
             
             settingsRow(title: "Notifications", icon: "bell.fill") {
-                // Handle notifications settings
+                // Handle notifications
             }
             
-            settingsRow(title: "Privacy", icon: "lock.fill") {
+            settingsRow(title: "Privacy & Data", icon: "lock.fill") {
                 // Handle privacy settings
             }
             
             settingsRow(title: "Help & Support", icon: "questionmark.circle.fill") {
                 // Handle help
             }
-            
-            settingsRow(title: "About", icon: "info.circle.fill") {
-                // Show about info
-            }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
         .padding(.horizontal)
     }
     
-    private var profileEditForm: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Edit Profile")
-                .font(.headline)
-                .padding(.horizontal)
-            
-            VStack(spacing: 16) {
-                VStack(alignment: .leading) {
-                    Text("Full Name")
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Full Name", text: $fullName)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                }
-                
-                VStack(alignment: .leading) {
-                    Text("Email")
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Email", text: $email)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .disabled(true) // Email cannot be changed
-                        .foregroundColor(.gray)
-                }
-                
-                VStack(alignment: .leading) {
-                    Text("Bio")
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                    
-                    TextEditor(text: $bio)
-                        .padding()
-                        .frame(minHeight: 100)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                }
-            }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(10)
-            .padding(.horizontal)
-        }
-    }
-    
-    // Helper Views
+    // MARK: - Helper Views
     
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
@@ -354,93 +338,30 @@ struct ProfileView: View {
         }
     }
     
-    // Helper Methods
-    
-    private func initialsFromName() -> String? {
-        guard let fullName = authViewModel.currentUser?.fullName, !fullName.isEmpty else { return nil }
-        
-        let components = fullName.components(separatedBy: " ")
-        if components.count > 1, let first = components.first?.first, let last = components.last?.first {
-            return String(first) + String(last)
-        } else if let first = components.first?.first {
-            return String(first)
-        }
-        
-        return nil
-    }
-    
-    private func loadUserData() {
-        guard let user = authViewModel.currentUser else { return }
-        
-        fullName = user.fullName
-        email = user.email
-        bio = user.bio ?? ""
-    }
-    
-    private func prepareForEditing() {
-        loadUserData()
-        isEditingProfile = true
-    }
+    // MARK: - Actions
     
     private func saveProfile() {
-        isLoading = true
-        
-        // Prepare profile update data
-        let profileData: [String: Any] = [
-            "fullName": fullName,
-            "bio": bio
-        ]
-        
-        // Call the AuthViewModel update method
         Task {
-            do {
-                try await authViewModel.updateProfile(profileData: profileData)
-                
-                // Update successful
-                DispatchQueue.main.async {
-                    isLoading = false
-                    isEditingProfile = false
-                }
-            } catch {
-                // Handle error
-                DispatchQueue.main.async {
-                    isLoading = false
-                    errorMessage = "Failed to update profile: \(error.localizedDescription)"
-                }
+            if await viewModel.updateProfile() {
+                // Success - UI already updated by the view model
             }
         }
     }
     
-    private func disconnectStrava() {
-        isLoading = true
-        
-        // Call disconnect method
+    private func logoutUser() {
         Task {
-            do {
-                try await authViewModel.disconnectStrava()
-                
-                DispatchQueue.main.async {
-                    isLoading = false
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    isLoading = false
-                    errorMessage = "Failed to disconnect Strava: \(error.localizedDescription)"
-                }
+            if await viewModel.logout() {
+                // Navigate to login screen would happen here
+                // This is handled by the app's root view based on auth state
             }
         }
     }
 }
 
-// Helper struct for identifying alerts
-struct IdentifiableAlert: Identifiable {
-    var id = UUID()
-    var message: String
-}
+// MARK: - Preview
 
 struct ProfileView_Previews: PreviewProvider {
     static var previews: some View {
         ProfileView()
-            .environmentObject(AuthViewModel())
     }
-} 
+}

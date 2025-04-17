@@ -8,26 +8,17 @@ import Foundation
 extension User {
     /// A sample user with complete profile for previews
     static var previewUser: User {
-        User(
-            id: "user-1",
-            email: "runner@example.com",
-            name: "Alex Runner",
-            profileImageUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-            gender: "female",
-            dateOfBirth: Calendar.current.date(byAdding: .year, value: -28, to: Date())!,
-            weight: 65.5,
-            height: 170,
-            preferredUnits: "metric",
-            experienceLevel: "intermediate",
-            trainingFrequency: 4,
-            preferredWorkoutTimes: ["morning", "evening"],
-            goals: ["Complete a half marathon", "Improve 5K time"],
-            isOnboarded: true,
-            isActive: true,
-            createdAt: Calendar.current.date(byAdding: .year, value: -1, to: Date())!,
-            updatedAt: Calendar.current.date(byAdding: .day, value: -14, to: Date())!,
-            stravaConnected: true,
-            garminConnected: false
+        return User(
+            id: "preview-user-123",
+            name: "Jane Smith",
+            email: "jane@example.com",
+            height: 173.0,
+            weight: 68.0,
+            birthdate: Date(),
+            createdAt: Date(),
+            updatedAt: Date(),
+            isStravaConnected: true,
+            trainingPlans: []
         )
     }
     

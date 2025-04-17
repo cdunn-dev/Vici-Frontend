@@ -102,7 +102,7 @@ extension TrainingPlan {
     }
     
     var completedWorkoutsCount: Int {
-        return workouts?.filter { $0.isCompleted }.count ?? 0
+        return workouts?.filter { $0.completed }.count ?? 0
     }
     
     var totalWorkoutsCount: Int {

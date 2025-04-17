@@ -159,4 +159,92 @@ extension Workout {
             return String(format: "%.0f m", distance)
         }
     }
+    
+    /// A collection of workout previews for a week
+    static var previewWorkouts: [Workout] {
+        let calendar = Calendar.current
+        let today = Date()
+        let thisWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        
+        return [
+            // Today's workout (easy run)
+            Workout(
+                id: "workout-1",
+                planId: "plan-1",
+                scheduledDate: today,
+                workoutType: "Easy Run",
+                name: "Recovery Run",
+                description: "A easy-paced recovery run",
+                durationMinutes: 45,
+                distanceMeters: 7000,
+                completed: false,
+                completedDate: nil,
+                notes: nil
+            ),
+            
+            // Tomorrow's workout (tempo)
+            Workout(
+                id: "workout-2",
+                planId: "plan-1",
+                scheduledDate: calendar.date(byAdding: .day, value: 1, to: today)!,
+                workoutType: "Tempo Run",
+                name: "Tempo Intervals",
+                description: "5 min warm up, 4 x 5 min @ tempo pace with 2 min recovery, 5 min cool down",
+                durationMinutes: 40,
+                distanceMeters: 8000,
+                completed: false,
+                completedDate: nil,
+                notes: nil
+            ),
+            
+            // Yesterday's workout (completed)
+            Workout(
+                id: "workout-3",
+                planId: "plan-1",
+                scheduledDate: calendar.date(byAdding: .day, value: -1, to: today)!,
+                workoutType: "Long Run",
+                name: "Weekend Long Run",
+                description: "Steady pace throughout, focus on endurance",
+                durationMinutes: 90,
+                distanceMeters: 15000,
+                completed: true,
+                completedDate: calendar.date(byAdding: .day, value: -1, to: today)!,
+                notes: "Felt good, maintained steady pace"
+            ),
+            
+            // Two days ago (completed)
+            Workout(
+                id: "workout-4",
+                planId: "plan-1",
+                scheduledDate: calendar.date(byAdding: .day, value: -2, to: today)!,
+                workoutType: "Rest Day",
+                name: "Rest",
+                description: "Full rest day or light stretching",
+                durationMinutes: 0,
+                distanceMeters: 0,
+                completed: true,
+                completedDate: calendar.date(byAdding: .day, value: -2, to: today)!,
+                notes: "Took a full rest day"
+            )
+        ]
+    }
+    
+    /// A single workout preview for testing
+    static var previewWorkout: Workout {
+        let today = Date()
+        
+        return Workout(
+            id: "workout-preview",
+            planId: "plan-1",
+            scheduledDate: today,
+            workoutType: "Interval",
+            name: "Speed Intervals",
+            description: "8 x 400m @ 5K pace with 200m recovery jog between intervals",
+            durationMinutes: 50,
+            distanceMeters: 8000,
+            completed: false,
+            completedDate: nil,
+            notes: nil
+        )
+    }
 } 
