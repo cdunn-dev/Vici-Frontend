@@ -46,11 +46,18 @@ class ProfileViewModel: BaseViewModel {
     /// Load the user's profile from the authentication service
     func loadUserProfile() {
         Task {
-            _ = await runTask(operation: "Load user profile") {
-                let user = try await authService.getCurrentUser()
-                self.user = user
-                self.setupFormFields()
-                return user
+            do {
+                let result = try await runTask(operation: "Load user profile") {
+                    let user = try await self.authService.getCurrentUser()
+                    await MainActor.run {
+                        self.user = user
+                        self.setupFormFields()
+                    }
+                    return user
+                }
+                self.logger.debug("User profile loaded successfully")
+            } catch {
+                self.logger.error("Failed to load user profile: \(error.localizedDescription)")
             }
         }
     }
@@ -58,20 +65,29 @@ class ProfileViewModel: BaseViewModel {
     /// Update the user's profile with edited information
     func updateProfile(allowEmailUpdate: Bool = false) async -> Bool {
         guard let userId = user?.id else {
-            handleError(DataError.notFound(entity: "User"))
+            let error = DataError.notFound(entity: "User")
+            handleError(error)
             return false
         }
         
-        return await runTask(operation: "Update user profile") {
-            let updatedUser = try await authService.updateProfile(
-                name: name.isEmpty ? nil : name,
-                email: allowEmailUpdate && user?.email != nil ? user?.email : nil
-            )
-            
-            self.user = updatedUser
-            self.isEditing = false
-            return true
-        } ?? false
+        do {
+            let result = try await runTask(operation: "Update user profile") {
+                let updatedUser = try await self.authService.updateProfile(
+                    name: self.name.isEmpty ? nil : self.name,
+                    email: allowEmailUpdate && self.user?.email != nil ? self.user?.email : nil
+                )
+                
+                await MainActor.run {
+                    self.user = updatedUser
+                    self.isEditing = false
+                }
+                return true
+            }
+            return result ?? false
+        } catch {
+            self.logger.error("Failed to update profile: \(error.localizedDescription)")
+            return false
+        }
     }
     
     /// Prepares the form fields for editing
@@ -88,11 +104,19 @@ class ProfileViewModel: BaseViewModel {
     
     /// Logs the user out
     func logout() async -> Bool {
-        return await runTask(operation: "Logout user") {
-            try await authService.logout()
-            self.user = nil
-            return true
-        } ?? false
+        do {
+            let result = try await runTask(operation: "Logout user") {
+                try await self.authService.logout()
+                await MainActor.run {
+                    self.user = nil
+                }
+                return true
+            }
+            return result ?? false
+        } catch {
+            self.logger.error("Failed to logout: \(error.localizedDescription)")
+            return false
+        }
     }
     
     /// Check if Strava is connected
@@ -108,7 +132,7 @@ class ProfileViewModel: BaseViewModel {
     /// Get initials from the user's name
     func getInitials() -> String {
         guard let name = user?.name, !name.isEmpty else {
-            return user?.email.prefix(1).uppercased() ?? "U"
+            return user?.email?.prefix(1).uppercased() ?? "U"
         }
         
         let components = name.components(separatedBy: " ")
