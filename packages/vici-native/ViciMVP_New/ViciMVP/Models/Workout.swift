@@ -3,34 +3,65 @@ import Foundation
 /// A workout in the Vici system, aligning with TypeScript Workout interface
 struct Workout: Codable, Identifiable, Hashable {
     var id: String
-    var planId: String?
+    var trainingPlanId: String
     var userId: String
-    var name: String
+    var title: String
     var description: String?
-    var scheduledDate: Date
-    var completed: Bool
-    var completedDate: Date?
-    var duration: Int?  // Duration in minutes
-    var distance: Double?  // Distance in meters
-    var activities: [Activity]?
-    var createdAt: Date?
-    var updatedAt: Date?
+    var date: Date
+    var status: WorkoutStatus
+    var workoutType: WorkoutType
+    var scheduledDuration: Int?  // Duration in seconds
+    var scheduledDistance: Double?  // Distance in meters
+    var tags: [String]?
+    var notes: String?
+    var goal: String?
+    var segments: [WorkoutSegment]?
+    
+    // Enums for workout status and type
+    enum WorkoutStatus: String, Codable {
+        case upcoming
+        case inProgress
+        case completed
+        case missed
+        case cancelled
+    }
+    
+    enum WorkoutType: String, Codable {
+        case run
+        case recovery
+        case longRun
+        case tempo
+        case interval
+        case intervalWorkout = "interval_workout"
+        case easy
+        case hills
+        case fartlek
+        case progression
+        case race
+        case crossTraining = "cross_training"
+        case walk
+        case cycling
+        case swimming
+        case strength
+        case other
+    }
     
     // CodingKeys to map between Swift and API JSON
     enum CodingKeys: String, CodingKey {
         case id
-        case planId
+        case trainingPlanId
         case userId
-        case name
+        case title
         case description
-        case scheduledDate
-        case completed
-        case completedDate
-        case duration
-        case distance
-        case activities
-        case createdAt
-        case updatedAt
+        case date
+        case status
+        case workoutType
+        case scheduledDuration
+        case scheduledDistance
+        case tags
+        case notes
+        case goal
+        case segments
     }
     
     // Hashable conformance
@@ -53,65 +84,194 @@ struct Workout: Codable, Identifiable, Hashable {
         return [
             Workout(
                 id: "workout1",
-                planId: "plan123",
+                trainingPlanId: "plan123",
                 userId: "user123",
-                name: "Easy Run",
+                title: "Easy Run",
                 description: "An easy recovery run to build endurance",
-                scheduledDate: today,
-                completed: false,
-                completedDate: nil,
-                duration: 30,
-                distance: 5000,
-                activities: [],
+                date: today,
+                status: .upcoming,
+                workoutType: .run,
+                scheduledDuration: 30,
+                scheduledDistance: 5000,
+                tags: [],
+                notes: nil,
+                goal: nil,
+                segments: [],
                 createdAt: today,
                 updatedAt: today
             ),
             Workout(
                 id: "workout2",
-                planId: "plan123",
+                trainingPlanId: "plan123",
                 userId: "user123",
-                name: "Interval Training",
+                title: "Interval Training",
                 description: "High-intensity intervals to improve speed",
-                scheduledDate: tomorrow,
-                completed: false,
-                completedDate: nil,
-                duration: 45,
-                distance: 8000,
-                activities: [],
+                date: tomorrow,
+                status: .upcoming,
+                workoutType: .interval,
+                scheduledDuration: 45,
+                scheduledDistance: 8000,
+                tags: [],
+                notes: nil,
+                goal: nil,
+                segments: [],
                 createdAt: today,
                 updatedAt: today
             ),
             Workout(
                 id: "workout3",
-                planId: "plan123",
+                trainingPlanId: "plan123",
                 userId: "user123",
-                name: "Long Run",
+                title: "Long Run",
                 description: "Building endurance with a longer distance",
-                scheduledDate: dayAfterTomorrow,
-                completed: false,
-                completedDate: nil,
-                duration: 90,
-                distance: 15000,
-                activities: [],
+                date: dayAfterTomorrow,
+                status: .upcoming,
+                workoutType: .longRun,
+                scheduledDuration: 90,
+                scheduledDistance: 15000,
+                tags: [],
+                notes: nil,
+                goal: nil,
+                segments: [],
                 createdAt: today,
                 updatedAt: today
             ),
             Workout(
                 id: "workout4",
-                planId: "plan123",
+                trainingPlanId: "plan123",
                 userId: "user123",
-                name: "Recovery Run",
+                title: "Recovery Run",
                 description: "Easy recovery run",
-                scheduledDate: yesterday,
-                completed: true,
-                completedDate: yesterday,
-                duration: 25,
-                distance: 4000,
-                activities: [],
+                date: yesterday,
+                status: .completed,
+                workoutType: .recovery,
+                scheduledDuration: 25,
+                scheduledDistance: 4000,
+                tags: [],
+                notes: nil,
+                goal: nil,
+                segments: [],
                 createdAt: yesterday,
                 updatedAt: yesterday
             )
         ]
+    }
+}
+
+/// A segment of a workout (e.g., warm-up, main set, cool-down)
+struct WorkoutSegment: Codable, Identifiable, Hashable {
+    var id: String
+    var workoutId: String
+    var order: Int
+    var title: String
+    var description: String?
+    var duration: Int?  // Duration in seconds
+    var distance: Double?  // Distance in meters
+    var intensity: WorkoutIntensity
+    var targetPace: Int?  // Seconds per kilometer
+    var targetHeartRate: Int?
+    var targetPower: Int?
+    var targetCadence: Int?
+    var completed: Bool
+    
+    enum WorkoutIntensity: String, Codable {
+        case recovery
+        case easy
+        case moderate
+        case tempo
+        case threshold
+        case interval
+        case maximal
+    }
+    
+    // CodingKeys to map between Swift and API JSON
+    enum CodingKeys: String, CodingKey {
+        case id
+        case workoutId
+        case order
+        case title
+        case description
+        case duration
+        case distance
+        case intensity
+        case targetPace
+        case targetHeartRate
+        case targetPower
+        case targetCadence
+        case completed
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: WorkoutSegment, rhs: WorkoutSegment) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
+// MARK: - Computed Properties
+
+extension Workout {
+    /// Format the workout duration as a string (e.g., "45 min")
+    var formattedDuration: String {
+        guard let duration = scheduledDuration else { return "N/A" }
+        
+        let hours = duration / 3600
+        let minutes = (duration % 3600) / 60
+        
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes) min"
+        }
+    }
+    
+    /// Format the workout distance as a string (e.g., "5.0 km")
+    var formattedDistance: String {
+        guard let distance = scheduledDistance else { return "N/A" }
+        
+        let kilometers = distance / 1000.0
+        return String(format: "%.1f km", kilometers)
+    }
+    
+    /// Get the workout type as a user-friendly string
+    var workoutTypeDisplay: String {
+        switch workoutType {
+        case .run:
+            return "Run"
+        case .recovery:
+            return "Recovery Run"
+        case .longRun:
+            return "Long Run"
+        case .tempo:
+            return "Tempo Run"
+        case .interval, .intervalWorkout:
+            return "Interval Workout"
+        case .easy:
+            return "Easy Run"
+        case .hills:
+            return "Hill Workout"
+        case .fartlek:
+            return "Fartlek"
+        case .progression:
+            return "Progression Run"
+        case .race:
+            return "Race"
+        case .crossTraining:
+            return "Cross Training"
+        case .walk:
+            return "Walk"
+        case .cycling:
+            return "Cycling"
+        case .swimming:
+            return "Swimming"
+        case .strength:
+            return "Strength Training"
+        case .other:
+            return "Other"
+        }
     }
 }
 
@@ -121,41 +281,46 @@ extension Workout {
     /// Creates a Workout from TypeScript-compatible ISO8601 date strings
     static func fromTypeScript(
         id: String,
-        planId: String?,
+        trainingPlanId: String?,
         userId: String,
-        name: String,
+        title: String,
         description: String?,
-        scheduledDate: String,
-        completed: Bool,
-        completedDate: String?,
-        duration: Int?,
-        distance: Double?,
-        activities: [Activity]?,
+        date: String,
+        status: WorkoutStatus,
+        workoutType: WorkoutType,
+        scheduledDuration: Int?,
+        scheduledDistance: Double?,
+        tags: [String]?,
+        notes: String?,
+        goal: String?,
+        segments: [WorkoutSegment]?,
         createdAt: String?,
         updatedAt: String?
     ) -> Workout? {
         let dateFormatter = ISO8601DateFormatter()
         
-        guard let scheduledDateObj = dateFormatter.date(from: scheduledDate) else {
+        guard let dateObj = dateFormatter.date(from: date) else {
             return nil
         }
         
-        let completedDateObj = completedDate != nil ? dateFormatter.date(from: completedDate!) : nil
         let createdAtDate = createdAt != nil ? dateFormatter.date(from: createdAt!) : nil
         let updatedAtDate = updatedAt != nil ? dateFormatter.date(from: updatedAt!) : nil
         
         return Workout(
             id: id,
-            planId: planId,
+            trainingPlanId: trainingPlanId ?? "",
             userId: userId,
-            name: name,
+            title: title,
             description: description,
-            scheduledDate: scheduledDateObj,
-            completed: completed,
-            completedDate: completedDateObj,
-            duration: duration,
-            distance: distance,
-            activities: activities,
+            date: dateObj,
+            status: status,
+            workoutType: workoutType,
+            scheduledDuration: scheduledDuration,
+            scheduledDistance: scheduledDistance,
+            tags: tags,
+            notes: notes,
+            goal: goal,
+            segments: segments,
             createdAt: createdAtDate,
             updatedAt: updatedAtDate
         )

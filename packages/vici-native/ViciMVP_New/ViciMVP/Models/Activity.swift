@@ -7,43 +7,57 @@ struct Activity: Codable, Identifiable, Hashable {
     var id: String
     var userId: String
     var workoutId: String?
-    var type: String      // e.g., "run", "bike", "swim"
-    var name: String
+    var title: String
     var description: String?
-    var startDate: Date
-    var endDate: Date
+    var activityType: ActivityType
+    var startTime: Date
+    var endTime: Date
     var duration: Int      // Duration in seconds
     var distance: Double?  // Distance in meters
-    var avgHeartRate: Int?
-    var maxHeartRate: Int?
-    var avgPace: Double?   // Pace in seconds per kilometer
-    var calories: Int?
     var elevationGain: Double?
-    var source: String?    // e.g., "manual", "strava", "garmin"
-    var polyline: String?  // Encoded path for maps
-    var createdAt: Date?
-    var updatedAt: Date?
+    var calories: Int?
+    var averageHeartRate: Int?
+    var maxHeartRate: Int?
+    var averagePace: Int?   // Pace in seconds per kilometer
+    var averageCadence: Int?
+    var stravaActivityId: String?
+    var routeData: [ActivityCoordinate]?
+    var segments: [ActivitySegment]?
+    
+    enum ActivityType: String, Codable {
+        case run
+        case walk
+        case cycling
+        case swimming
+        case strength
+        case hiit
+        case yoga
+        case recovery
+        case crossTraining = "cross_training"
+        case intervalWorkout = "interval_workout"
+        case other
+    }
     
     enum CodingKeys: String, CodingKey {
         case id
         case userId
         case workoutId
-        case type
-        case name
+        case title
         case description
-        case startDate
-        case endDate
+        case activityType
+        case startTime
+        case endTime
         case duration
         case distance
-        case avgHeartRate
-        case maxHeartRate
-        case avgPace
-        case calories
         case elevationGain
-        case source
-        case polyline
-        case createdAt
-        case updatedAt
+        case calories
+        case averageHeartRate
+        case maxHeartRate
+        case averagePace
+        case averageCadence
+        case stravaActivityId
+        case routeData
+        case segments
     }
     
     // Hashable conformance
@@ -56,6 +70,40 @@ struct Activity: Codable, Identifiable, Hashable {
     }
 }
 
+/// A segment of an activity (e.g., warm-up, main set, cool-down)
+struct ActivitySegment: Codable, Identifiable, Hashable {
+    var id: String
+    var activityId: String
+    var order: Int
+    var title: String
+    var duration: Int?  // Duration in seconds
+    var distance: Double?  // Distance in meters
+    var averageHeartRate: Int?
+    var averagePace: Int?  // Seconds per kilometer
+    var averageCadence: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case activityId
+        case order
+        case title
+        case duration
+        case distance
+        case averageHeartRate
+        case averagePace
+        case averageCadence
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: ActivitySegment, rhs: ActivitySegment) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
 // MARK: - Date Conversion Extensions
 
 extension Activity {
@@ -64,53 +112,50 @@ extension Activity {
         id: String,
         userId: String,
         workoutId: String?,
-        type: String,
-        name: String,
+        title: String,
         description: String?,
-        startDate: String,
-        endDate: String,
+        activityType: ActivityType,
+        startTime: String,
+        endTime: String,
         duration: Int,
         distance: Double?,
-        avgHeartRate: Int?,
-        maxHeartRate: Int?,
-        avgPace: Double?,
-        calories: Int?,
         elevationGain: Double?,
-        source: String?,
-        polyline: String?,
-        createdAt: String?,
-        updatedAt: String?
+        calories: Int?,
+        averageHeartRate: Int?,
+        maxHeartRate: Int?,
+        averagePace: Int?,
+        averageCadence: Int?,
+        stravaActivityId: String?,
+        routeData: [ActivityCoordinate]?,
+        segments: [ActivitySegment]?
     ) -> Activity? {
         let dateFormatter = ISO8601DateFormatter()
         
-        guard let startDateObj = dateFormatter.date(from: startDate),
-              let endDateObj = dateFormatter.date(from: endDate) else {
+        guard let startTimeObj = dateFormatter.date(from: startTime),
+              let endTimeObj = dateFormatter.date(from: endTime) else {
             return nil
         }
-        
-        let createdAtDate = createdAt != nil ? dateFormatter.date(from: createdAt!) : nil
-        let updatedAtDate = updatedAt != nil ? dateFormatter.date(from: updatedAt!) : nil
         
         return Activity(
             id: id,
             userId: userId,
             workoutId: workoutId,
-            type: type,
-            name: name,
+            title: title,
             description: description,
-            startDate: startDateObj,
-            endDate: endDateObj,
+            activityType: activityType,
+            startTime: startTimeObj,
+            endTime: endTimeObj,
             duration: duration,
             distance: distance,
-            avgHeartRate: avgHeartRate,
-            maxHeartRate: maxHeartRate,
-            avgPace: avgPace,
-            calories: calories,
             elevationGain: elevationGain,
-            source: source,
-            polyline: polyline,
-            createdAt: createdAtDate,
-            updatedAt: updatedAtDate
+            calories: calories,
+            averageHeartRate: averageHeartRate,
+            maxHeartRate: maxHeartRate,
+            averagePace: averagePace,
+            averageCadence: averageCadence,
+            stravaActivityId: stravaActivityId,
+            routeData: routeData,
+            segments: segments
         )
     }
     
@@ -139,12 +184,39 @@ extension Activity {
     }
     
     var formattedPace: String? {
-        guard let pace = avgPace else { return nil }
+        guard let pace = averagePace else { return nil }
         
-        let minutes = Int(pace) / 60
-        let seconds = Int(pace) % 60
+        let minutes = pace / 60
+        let seconds = pace % 60
         
         return String(format: "%d:%02d /km", minutes, seconds)
+    }
+    
+    var formattedActivityType: String {
+        switch activityType {
+        case .run:
+            return "Run"
+        case .walk:
+            return "Walk"
+        case .cycling:
+            return "Cycling"
+        case .swimming:
+            return "Swimming"
+        case .strength:
+            return "Strength Training"
+        case .hiit:
+            return "HIIT"
+        case .yoga:
+            return "Yoga"
+        case .recovery:
+            return "Recovery"
+        case .crossTraining:
+            return "Cross Training"
+        case .intervalWorkout:
+            return "Interval Workout"
+        case .other:
+            return "Other"
+        }
     }
 }
 

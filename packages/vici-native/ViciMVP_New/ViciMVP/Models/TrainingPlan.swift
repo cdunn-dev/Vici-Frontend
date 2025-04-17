@@ -4,30 +4,41 @@ import Foundation
 struct TrainingPlan: Codable, Identifiable, Hashable {
     var id: String
     var userId: String
-    var name: String
+    var title: String
     var description: String?
-    var goal: String?
+    var status: PlanStatus
     var startDate: Date
     var endDate: Date
-    var isActive: Bool
-    var isCompleted: Bool
+    var goalRaceDate: Date?
+    var goalRaceDistance: Double?  // in meters
+    var goalRaceTime: Int?  // in seconds
+    var workouts: [Workout]
     var createdAt: Date?
     var updatedAt: Date?
-    var workouts: [Workout]?
+    var trainingPhases: [TrainingPhase]?
+    
+    enum PlanStatus: String, Codable {
+        case draft
+        case active
+        case completed
+        case archived
+    }
     
     enum CodingKeys: String, CodingKey {
         case id
         case userId
-        case name
+        case title
         case description
-        case goal
+        case status
         case startDate
         case endDate
-        case isActive
-        case isCompleted
+        case goalRaceDate
+        case goalRaceDistance
+        case goalRaceTime
+        case workouts
         case createdAt
         case updatedAt
-        case workouts
+        case trainingPhases
     }
     
     // Hashable conformance
@@ -40,6 +51,47 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     }
 }
 
+/// A phase within a training plan (e.g., base building, strength & speed, peak & taper)
+struct TrainingPhase: Codable, Identifiable, Hashable {
+    var id: String
+    var trainingPlanId: String
+    var title: String
+    var description: String?
+    var startDate: Date
+    var endDate: Date
+    var order: Int
+    var type: PhaseType
+    
+    enum PhaseType: String, Codable {
+        case baseBuilding = "base_building"
+        case strengthSpeed = "strength_speed"
+        case peakTaper = "peak_taper"
+        case recovery
+        case maintenance
+        case custom
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case trainingPlanId
+        case title
+        case description
+        case startDate
+        case endDate
+        case order
+        case type
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: TrainingPhase, rhs: TrainingPhase) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
 // MARK: - Date Conversion Extensions
 
 extension TrainingPlan {
@@ -47,16 +99,18 @@ extension TrainingPlan {
     static func fromTypeScript(
         id: String,
         userId: String,
-        name: String,
+        title: String,
         description: String?,
-        goal: String?,
+        status: PlanStatus,
         startDate: String,
         endDate: String,
-        isActive: Bool,
-        isCompleted: Bool,
+        goalRaceDate: String?,
+        goalRaceDistance: Double?,
+        goalRaceTime: Int?,
+        workouts: [Workout],
         createdAt: String?,
         updatedAt: String?,
-        workouts: [Workout]?
+        trainingPhases: [TrainingPhase]?
     ) -> TrainingPlan? {
         let dateFormatter = ISO8601DateFormatter()
         
@@ -65,22 +119,25 @@ extension TrainingPlan {
             return nil
         }
         
+        let goalRaceDateObj = goalRaceDate != nil ? dateFormatter.date(from: goalRaceDate!) : nil
         let createdAtDate = createdAt != nil ? dateFormatter.date(from: createdAt!) : nil
         let updatedAtDate = updatedAt != nil ? dateFormatter.date(from: updatedAt!) : nil
         
         return TrainingPlan(
             id: id,
             userId: userId,
-            name: name,
+            title: title,
             description: description,
-            goal: goal,
+            status: status,
             startDate: startDateObj,
             endDate: endDateObj,
-            isActive: isActive,
-            isCompleted: isCompleted,
+            goalRaceDate: goalRaceDateObj,
+            goalRaceDistance: goalRaceDistance,
+            goalRaceTime: goalRaceTime,
+            workouts: workouts,
             createdAt: createdAtDate,
             updatedAt: updatedAtDate,
-            workouts: workouts
+            trainingPhases: trainingPhases
         )
     }
     
@@ -102,16 +159,52 @@ extension TrainingPlan {
     }
     
     var completedWorkoutsCount: Int {
-        return workouts?.filter { $0.completed }.count ?? 0
+        return workouts.filter { $0.status == .completed }.count
     }
     
     var totalWorkoutsCount: Int {
-        return workouts?.count ?? 0
+        return workouts.count
     }
     
     var progressPercentage: Double {
         let total = totalWorkoutsCount
         if total == 0 { return 0.0 }
         return Double(completedWorkoutsCount) / Double(total) * 100.0
+    }
+    
+    // Format the goal race time as a string (e.g., "3:45:30")
+    var formattedGoalRaceTime: String? {
+        guard let seconds = goalRaceTime else { return nil }
+        
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+        let remainingSeconds = seconds % 60
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, remainingSeconds)
+        } else {
+            return String(format: "%d:%02d", minutes, remainingSeconds)
+        }
+    }
+    
+    // Format the goal race distance as a string (e.g., "42.2 km")
+    var formattedGoalRaceDistance: String? {
+        guard let distance = goalRaceDistance else { return nil }
+        
+        // Convert to kilometers
+        let kilometers = distance / 1000.0
+        
+        // Use common race distance names if applicable
+        if abs(kilometers - 5) < 0.1 {
+            return "5K"
+        } else if abs(kilometers - 10) < 0.1 {
+            return "10K"
+        } else if abs(kilometers - 21.0975) < 0.1 {
+            return "Half Marathon"
+        } else if abs(kilometers - 42.195) < 0.1 {
+            return "Marathon"
+        } else {
+            return String(format: "%.1f km", kilometers)
+        }
     }
 } 
