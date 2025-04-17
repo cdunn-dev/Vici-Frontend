@@ -19,14 +19,11 @@
 		E55EB61B2DAFEC9B00C04966 /* TrainingPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB6072DAFEC9B00C04966 /* TrainingPlanViewModel.swift */; };
 		E55EB61C2DAFEC9B00C04966 /* TrainingPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5E92DAFEC9B00C04966 /* TrainingPlan.swift */; };
 		E55EB61F2DAFEC9B00C04966 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5E02DAFEC9B00C04966 /* AppDelegate.swift */; };
-		E55EB6202DAFEC9B00C04966 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5E52DAFEC9B00C04966 /* MainTabView.swift */; };
-		E55EB6212DAFEC9B00C04966 /* NotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5F12DAFEC9B00C04966 /* NotificationNames.swift */; };
 		E55EB6222DAFEC9B00C04966 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5F72DAFEC9B00C04966 /* AuthService.swift */; };
 		E55EB6242DAFEC9B00C04966 /* ViciResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5ED2DAFEC9B00C04966 /* ViciResponse.swift */; };
 		E55EB6252DAFEC9B00C04966 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB6022DAFEC9B00C04966 /* AuthViewModel.swift */; };
 		E55EB6272DAFEC9B00C04966 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5EB2DAFEC9B00C04966 /* User.swift */; };
 		E55EB6282DAFEC9B00C04966 /* ViciMVPApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB6002DAFEC9B00C04966 /* ViciMVPApp.swift */; };
-		E55EB6292DAFEC9B00C04966 /* UserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB6082DAFEC9B00C04966 /* UserViewModel.swift */; };
 		E55EB62A2DAFEC9B00C04966 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5EE2DAFEC9B00C04966 /* Workout.swift */; };
 		E55EB62B2DAFEC9B00C04966 /* AskViciViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB6012DAFEC9B00C04966 /* AskViciViewModel.swift */; };
 		E55EB62C2DAFEC9B00C04966 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB5F62DAFEC9B00C04966 /* APIError.swift */; };
@@ -40,6 +37,9 @@
 		E55EB6372DAFEC9B00C04966 /* StravaConnectViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55EB6062DAFEC9B00C04966 /* StravaConnectViewModel.swift */; };
 		E55EB6392DAFEC9B00C04966 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E55EB5E12DAFEC9B00C04966 /* Assets.xcassets */; };
 		E55EB63A2DAFEC9B00C04966 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E55EB5F22DAFEC9B00C04966 /* Preview Assets.xcassets */; };
+		E59C7B3E2DB0FAC2002A9DC9 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59C7B3D2DB0FAC2002A9DC9 /* MainTabView.swift */; };
+		E59C7B422DB0FB7D002A9DC9 /* ModelValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59C7B402DB0FB7D002A9DC9 /* ModelValidation.swift */; };
+		E59C7B432DB0FB7D002A9DC9 /* NotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59C7B412DB0FB7D002A9DC9 /* NotificationNames.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,10 +48,8 @@
 		E55EB5E12DAFEC9B00C04966 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = ViciMVP/Assets.xcassets; sourceTree = "<group>"; };
 		E55EB5E22DAFEC9B00C04966 /* StravaError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaError.swift; sourceTree = "<group>"; };
 		E55EB5E42DAFEC9B00C04966 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ViciMVP/Info.plist; sourceTree = "<group>"; };
-		E55EB5E52DAFEC9B00C04966 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MainTabView.swift; path = ViciMVP/MainTabView.swift; sourceTree = "<group>"; };
 		E55EB5E62DAFEC9B00C04966 /* Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
 		E55EB5E72DAFEC9B00C04966 /* Activity+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Activity+Preview.swift"; sourceTree = "<group>"; };
-		E55EB5E82DAFEC9B00C04966 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
 		E55EB5E92DAFEC9B00C04966 /* TrainingPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlan.swift; sourceTree = "<group>"; };
 		E55EB5EA2DAFEC9B00C04966 /* TrainingPlan+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrainingPlan+Preview.swift"; sourceTree = "<group>"; };
 		E55EB5EB2DAFEC9B00C04966 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
@@ -59,7 +57,6 @@
 		E55EB5ED2DAFEC9B00C04966 /* ViciResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViciResponse.swift; sourceTree = "<group>"; };
 		E55EB5EE2DAFEC9B00C04966 /* Workout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
 		E55EB5EF2DAFEC9B00C04966 /* Workout+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workout+Preview.swift"; sourceTree = "<group>"; };
-		E55EB5F12DAFEC9B00C04966 /* NotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationNames.swift; path = ViciMVP/NotificationNames.swift; sourceTree = "<group>"; };
 		E55EB5F22DAFEC9B00C04966 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		E55EB5F42DAFEC9B00C04966 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		E55EB5F52DAFEC9B00C04966 /* APIClientProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientProtocol.swift; sourceTree = "<group>"; };
@@ -68,8 +65,6 @@
 		E55EB5F82DAFEC9B00C04966 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		E55EB5F92DAFEC9B00C04966 /* KeychainServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainServiceProtocol.swift; sourceTree = "<group>"; };
 		E55EB5FA2DAFEC9B00C04966 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
-		E55EB5FB2DAFEC9B00C04966 /* MockAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAuthService.swift; sourceTree = "<group>"; };
-		E55EB5FC2DAFEC9B00C04966 /* MockKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockKeychainService.swift; sourceTree = "<group>"; };
 		E55EB5FD2DAFEC9B00C04966 /* StravaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaService.swift; sourceTree = "<group>"; };
 		E55EB5FE2DAFEC9B00C04966 /* TrainingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingService.swift; sourceTree = "<group>"; };
 		E55EB6002DAFEC9B00C04966 /* ViciMVPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViciMVPApp.swift; path = ViciMVP/ViciMVPApp.swift; sourceTree = "<group>"; };
@@ -77,16 +72,16 @@
 		E55EB6022DAFEC9B00C04966 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		E55EB6032DAFEC9B00C04966 /* AuthViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModelProtocol.swift; sourceTree = "<group>"; };
 		E55EB6042DAFEC9B00C04966 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
-		E55EB6052DAFEC9B00C04966 /* SimpleAuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleAuthViewModel.swift; sourceTree = "<group>"; };
 		E55EB6062DAFEC9B00C04966 /* StravaConnectViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaConnectViewModel.swift; sourceTree = "<group>"; };
 		E55EB6072DAFEC9B00C04966 /* TrainingPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanViewModel.swift; sourceTree = "<group>"; };
-		E55EB6082DAFEC9B00C04966 /* UserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserViewModel.swift; sourceTree = "<group>"; };
 		E55EB60A2DAFEC9B00C04966 /* AskViciView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskViciView.swift; sourceTree = "<group>"; };
 		E55EB60B2DAFEC9B00C04966 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		E55EB60C2DAFEC9B00C04966 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		E55EB60D2DAFEC9B00C04966 /* StravaConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaConnectView.swift; sourceTree = "<group>"; };
-		E55EB60E2DAFEC9B00C04966 /* StravaConnectView_Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaConnectView_Previews.swift; sourceTree = "<group>"; };
 		E55EB60F2DAFEC9B00C04966 /* TrainingPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanView.swift; sourceTree = "<group>"; };
+		E59C7B3D2DB0FAC2002A9DC9 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		E59C7B402DB0FB7D002A9DC9 /* ModelValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelValidation.swift; sourceTree = "<group>"; };
+		E59C7B412DB0FB7D002A9DC9 /* NotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationNames.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,16 +98,15 @@
 		E55EB5C42DAFE9AF00C04966 = {
 			isa = PBXGroup;
 			children = (
+				E55EB6002DAFEC9B00C04966 /* ViciMVPApp.swift */,
 				E55EB5E02DAFEC9B00C04966 /* AppDelegate.swift */,
 				E55EB5E12DAFEC9B00C04966 /* Assets.xcassets */,
-				E55EB5E32DAFEC9B00C04966 /* Errors */,
 				E55EB5E42DAFEC9B00C04966 /* Info.plist */,
-				E55EB5E52DAFEC9B00C04966 /* MainTabView.swift */,
-				E55EB5F02DAFEC9B00C04966 /* Models */,
-				E55EB5F12DAFEC9B00C04966 /* NotificationNames.swift */,
 				E55EB5F32DAFEC9B00C04966 /* Preview Content */,
+				E59C7B3F2DB0FB31002A9DC9 /* Utils */,
+				E55EB5E32DAFEC9B00C04966 /* Errors */,
+				E55EB5F02DAFEC9B00C04966 /* Models */,
 				E55EB5FF2DAFEC9B00C04966 /* Services */,
-				E55EB6002DAFEC9B00C04966 /* ViciMVPApp.swift */,
 				E55EB6092DAFEC9B00C04966 /* ViewModels */,
 				E55EB6102DAFEC9B00C04966 /* Views */,
 				E55EB5CE2DAFE9AF00C04966 /* Products */,
@@ -130,6 +124,7 @@
 		E55EB5E32DAFEC9B00C04966 /* Errors */ = {
 			isa = PBXGroup;
 			children = (
+				E55EB5F62DAFEC9B00C04966 /* APIError.swift */,
 				E55EB5E22DAFEC9B00C04966 /* StravaError.swift */,
 			);
 			name = Errors;
@@ -141,7 +136,6 @@
 			children = (
 				E55EB5E62DAFEC9B00C04966 /* Activity.swift */,
 				E55EB5E72DAFEC9B00C04966 /* Activity+Preview.swift */,
-				E55EB5E82DAFEC9B00C04966 /* Test.swift */,
 				E55EB5E92DAFEC9B00C04966 /* TrainingPlan.swift */,
 				E55EB5EA2DAFEC9B00C04966 /* TrainingPlan+Preview.swift */,
 				E55EB5EB2DAFEC9B00C04966 /* User.swift */,
@@ -168,13 +162,10 @@
 			children = (
 				E55EB5F42DAFEC9B00C04966 /* APIClient.swift */,
 				E55EB5F52DAFEC9B00C04966 /* APIClientProtocol.swift */,
-				E55EB5F62DAFEC9B00C04966 /* APIError.swift */,
 				E55EB5F72DAFEC9B00C04966 /* AuthService.swift */,
 				E55EB5F82DAFEC9B00C04966 /* KeychainService.swift */,
 				E55EB5F92DAFEC9B00C04966 /* KeychainServiceProtocol.swift */,
 				E55EB5FA2DAFEC9B00C04966 /* LLMService.swift */,
-				E55EB5FB2DAFEC9B00C04966 /* MockAuthService.swift */,
-				E55EB5FC2DAFEC9B00C04966 /* MockKeychainService.swift */,
 				E55EB5FD2DAFEC9B00C04966 /* StravaService.swift */,
 				E55EB5FE2DAFEC9B00C04966 /* TrainingService.swift */,
 			);
@@ -189,10 +180,8 @@
 				E55EB6022DAFEC9B00C04966 /* AuthViewModel.swift */,
 				E55EB6032DAFEC9B00C04966 /* AuthViewModelProtocol.swift */,
 				E55EB6042DAFEC9B00C04966 /* ProfileViewModel.swift */,
-				E55EB6052DAFEC9B00C04966 /* SimpleAuthViewModel.swift */,
 				E55EB6062DAFEC9B00C04966 /* StravaConnectViewModel.swift */,
 				E55EB6072DAFEC9B00C04966 /* TrainingPlanViewModel.swift */,
-				E55EB6082DAFEC9B00C04966 /* UserViewModel.swift */,
 			);
 			name = ViewModels;
 			path = ViciMVP/ViewModels;
@@ -201,15 +190,25 @@
 		E55EB6102DAFEC9B00C04966 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				E59C7B3D2DB0FAC2002A9DC9 /* MainTabView.swift */,
 				E55EB60A2DAFEC9B00C04966 /* AskViciView.swift */,
 				E55EB60B2DAFEC9B00C04966 /* AuthView.swift */,
 				E55EB60C2DAFEC9B00C04966 /* ProfileView.swift */,
 				E55EB60D2DAFEC9B00C04966 /* StravaConnectView.swift */,
-				E55EB60E2DAFEC9B00C04966 /* StravaConnectView_Previews.swift */,
 				E55EB60F2DAFEC9B00C04966 /* TrainingPlanView.swift */,
 			);
 			name = Views;
 			path = ViciMVP/Views;
+			sourceTree = "<group>";
+		};
+		E59C7B3F2DB0FB31002A9DC9 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				E59C7B402DB0FB7D002A9DC9 /* ModelValidation.swift */,
+				E59C7B412DB0FB7D002A9DC9 /* NotificationNames.swift */,
+			);
+			name = Utils;
+			path = ViciMVP/Utils;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -288,6 +287,7 @@
 				E55EB6112DAFEC9B00C04966 /* StravaService.swift in Sources */,
 				E55EB6122DAFEC9B00C04966 /* TrainingPlanView.swift in Sources */,
 				E55EB6142DAFEC9B00C04966 /* StravaError.swift in Sources */,
+				E59C7B3E2DB0FAC2002A9DC9 /* MainTabView.swift in Sources */,
 				E55EB6152DAFEC9B00C04966 /* KeychainService.swift in Sources */,
 				E55EB6162DAFEC9B00C04966 /* StravaConnectView.swift in Sources */,
 				E55EB6172DAFEC9B00C04966 /* APIClient.swift in Sources */,
@@ -297,14 +297,13 @@
 				E55EB61B2DAFEC9B00C04966 /* TrainingPlanViewModel.swift in Sources */,
 				E55EB61C2DAFEC9B00C04966 /* TrainingPlan.swift in Sources */,
 				E55EB61F2DAFEC9B00C04966 /* AppDelegate.swift in Sources */,
-				E55EB6202DAFEC9B00C04966 /* MainTabView.swift in Sources */,
-				E55EB6212DAFEC9B00C04966 /* NotificationNames.swift in Sources */,
 				E55EB6222DAFEC9B00C04966 /* AuthService.swift in Sources */,
 				E55EB6242DAFEC9B00C04966 /* ViciResponse.swift in Sources */,
+				E59C7B422DB0FB7D002A9DC9 /* ModelValidation.swift in Sources */,
+				E59C7B432DB0FB7D002A9DC9 /* NotificationNames.swift in Sources */,
 				E55EB6252DAFEC9B00C04966 /* AuthViewModel.swift in Sources */,
 				E55EB6272DAFEC9B00C04966 /* User.swift in Sources */,
 				E55EB6282DAFEC9B00C04966 /* ViciMVPApp.swift in Sources */,
-				E55EB6292DAFEC9B00C04966 /* UserViewModel.swift in Sources */,
 				E55EB62A2DAFEC9B00C04966 /* Workout.swift in Sources */,
 				E55EB62B2DAFEC9B00C04966 /* AskViciViewModel.swift in Sources */,
 				E55EB62C2DAFEC9B00C04966 /* APIError.swift in Sources */,

@@ -475,12 +475,7 @@ class APIClient: APIClientProtocol {
     }
 }
 
-// Add protocol conformance back
-protocol APIClientProtocol {
-    // ... methods ...
-}
-
-// Add HTTPMethod enum back
+// HTTPMethod enum
 enum HTTPMethod: String {
     case get = "GET"
     case post = "POST"

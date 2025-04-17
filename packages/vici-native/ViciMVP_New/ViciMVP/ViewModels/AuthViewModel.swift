@@ -5,7 +5,7 @@ import os.log
 
 /// AuthViewModel handles user authentication, profile management, and third-party service connections
 @MainActor
-class AuthViewModel: AuthViewModelProtocol {
+class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
     // MARK: - Published Properties
     
     /// Whether the user is currently logged in
@@ -42,6 +42,7 @@ class AuthViewModel: AuthViewModelProtocol {
         self.keychainService = keychainService
         self.stravaService = stravaService
         
+        super.init(logCategory: "AuthViewModel")
         setupSubscriptions()
         checkAuthStatus()
     }
@@ -86,28 +87,19 @@ class AuthViewModel: AuthViewModelProtocol {
     ///   - email: User's email address
     ///   - password: User's password
     func login(email: String, password: String) {
-        isLoading = true
-        errorMessage = nil
-        
-        logger.debug("Attempting login for email: \(email)")
-        
-        authService.login(email: email, password: password) { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                switch result {
-                case .success(let user):
-                    self.logger.debug("Login successful for user: \(user.id)")
-                    self.currentUser = user
-                    self.isLoggedIn = true
-                    self.checkStravaConnection()
-                    
-                case .failure(let error):
-                    self.logger.error("Login failed: \(error.localizedDescription)")
-                    self.errorMessage = error.localizedDescription
-                }
-            }
+        Task {
+            await loginAsync(email: email, password: password)
+        }
+    }
+    
+    /// Async implementation of login
+    private func loginAsync(email: String, password: String) async {
+        let _ = await runTask(operation: "Login with email: \(email)") {
+            let user = try await authService.login(email: email, password: password)
+            self.currentUser = user
+            self.isLoggedIn = true
+            self.checkStravaConnection()
+            return user
         }
     }
     
@@ -117,182 +109,122 @@ class AuthViewModel: AuthViewModelProtocol {
     ///   - email: User's email address
     ///   - password: User's password
     func register(email: String, password: String, name: String) {
-        isLoading = true
-        errorMessage = nil
-        
-        logger.debug("Attempting registration for email: \(email)")
-        
-        authService.register(email: email, password: password, name: name) { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                switch result {
-                case .success(let user):
-                    self.logger.debug("Registration successful for user: \(user.id)")
-                    self.currentUser = user
-                    self.isLoggedIn = true
-                    
-                case .failure(let error):
-                    self.logger.error("Registration failed: \(error.localizedDescription)")
-                    self.errorMessage = error.localizedDescription
-                }
-            }
+        Task {
+            await registerAsync(email: email, password: password, name: name)
+        }
+    }
+    
+    /// Async implementation of register
+    private func registerAsync(email: String, password: String, name: String) async {
+        let _ = await runTask(operation: "Register new user with email: \(email)") {
+            let user = try await authService.register(email: email, password: password, name: name)
+            self.currentUser = user
+            self.isLoggedIn = true
+            return user
         }
     }
     
     /// Log out the current user
     func logout() {
-        isLoading = true
-        errorMessage = nil
-        
-        logger.debug("Attempting logout")
-        
-        authService.logout { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                switch result {
-                case .success:
-                    self.logger.debug("Logout successful")
-                    self.currentUser = nil
-                    self.isLoggedIn = false
-                    self.isStravaConnected = false
-                    
-                case .failure(let error):
-                    self.logger.error("Logout failed: \(error.localizedDescription)")
-                    self.errorMessage = error.localizedDescription
-                }
-            }
+        Task {
+            await logoutAsync()
         }
     }
     
+    /// Async implementation of logout
+    private func logoutAsync() async {
+        let success = await runTask(operation: "Logout user") {
+            try await authService.logout()
+            self.currentUser = nil
+            self.isLoggedIn = false
+            self.isStravaConnected = false
+            return true
+        } ?? false
+    }
+    
     /// Refresh the current user's profile
-    func refreshUserProfile() {
+    func refreshUserProfile() async {
         guard isLoggedIn else {
             logger.debug("Cannot refresh profile: user not logged in")
+            handleError(AuthError.sessionExpired)
             return
         }
         
-        logger.debug("Refreshing user profile")
-        
-        authService.getUserProfile { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                switch result {
-                case .success(let user):
-                    self.logger.debug("Profile refresh successful for user: \(user.id)")
-                    self.currentUser = user
-                    self.checkStravaConnection()
-                    
-                case .failure(let error):
-                    self.logger.error("Profile refresh failed: \(error.localizedDescription)")
-                    self.errorMessage = error.localizedDescription
-                }
-            }
+        let _ = await runTask(operation: "Refresh user profile") {
+            let user = try await authService.getCurrentUser()
+            self.currentUser = user
+            self.checkStravaConnection()
+            return user
         }
     }
     
     // MARK: - Strava Connection Methods
     
     /// Check if the user has connected their Strava account
-    func checkStravaConnection() {
+    private func checkStravaConnection() {
         guard let userId = currentUser?.id else {
             logger.debug("Cannot check Strava connection: no current user")
             return
         }
         
-        logger.debug("Checking Strava connection for user: \(userId)")
-        
-        authService.checkStravaConnection(userId: userId) { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                switch result {
-                case .success(let isConnected):
-                    self.logger.debug("Strava connection status: \(isConnected ? "connected" : "not connected")")
-                    self.isStravaConnected = isConnected
-                    
-                case .failure(let error):
-                    self.logger.error("Failed to check Strava connection: \(error.localizedDescription)")
-                    // Don't update the UI error message for this check
-                }
-            }
+        // Using handlePublisher for Combine publisher
+        handlePublisher(
+            authService.checkStravaConnectionPublisher(userId: userId),
+            operation: "Check Strava connection",
+            showLoading: false
+        ) { [weak self] isConnected in
+            self?.isStravaConnected = isConnected
+        }
+    }
+    
+    /// Connect the user's Strava account
+    /// - Parameter userId: The user's ID
+    func connectStrava(userId: String) async {
+        let _ = await runTask(operation: "Connect Strava for user: \(userId)") {
+            try await authService.connectStrava(userId: userId)
+            self.isStravaConnected = true
+            return true
+        }
+    }
+    
+    /// Disconnect the user's Strava account
+    /// - Parameter userId: The user's ID
+    func disconnectStrava(userId: String) async {
+        let _ = await runTask(operation: "Disconnect Strava for user: \(userId)") {
+            try await authService.disconnectStrava(userId: userId)
+            self.isStravaConnected = false
+            return true
         }
     }
     
     /// Update the Strava connection status
-    func updateStravaConnectionStatus(isConnected: Bool = false) {
-        logger.debug("Updating Strava connection status: \(isConnected ? "connected" : "not connected")")
+    /// - Parameter isConnected: Whether the user is connected to Strava
+    func updateStravaConnectionStatus(isConnected: Bool) {
         self.isStravaConnected = isConnected
     }
     
-    /// Connect to Strava
-    func connectToStrava() {
-        guard let userId = currentUser?.id else {
-            logger.error("Cannot connect Strava: user not logged in")
-            errorMessage = "User must be logged in to connect Strava"
-            return
-        }
-        
-        logger.debug("Connecting Strava for user: \(userId)")
-        
-        authService.connectStrava(userId: userId) { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                switch result {
-                case .success:
-                    self.logger.debug("Successfully connected to Strava")
-                    self.isStravaConnected = true
-                    
-                case .failure(let error):
-                    self.logger.error("Failed to connect Strava: \(error.localizedDescription)")
-                    self.errorMessage = "Failed to connect Strava: \(error.localizedDescription)"
-                }
-            }
-        }
+    // MARK: - Helper methods for previews
+    
+    /// Create a preview instance for logged-in state
+    static func loggedInPreview() -> AuthViewModel {
+        let mockViewModel = AuthViewModel(
+            authService: AuthService.shared,
+            keychainService: KeychainService.shared
+        )
+        mockViewModel.isLoggedIn = true
+        mockViewModel.currentUser = User.preview
+        return mockViewModel
     }
     
-    /// Disconnect from Strava
-    func disconnectStrava() {
-        guard let userId = currentUser?.id else {
-            logger.error("Cannot disconnect Strava: user not logged in")
-            errorMessage = "User must be logged in to disconnect Strava"
-            return
-        }
-        
-        logger.debug("Disconnecting Strava for user: \(userId)")
-        
-        authService.disconnectStrava(userId: userId) { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                switch result {
-                case .success:
-                    self.logger.debug("Successfully disconnected from Strava")
-                    self.isStravaConnected = false
-                    
-                case .failure(let error):
-                    self.logger.error("Failed to disconnect Strava: \(error.localizedDescription)")
-                    self.errorMessage = "Failed to disconnect Strava: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func isUnauthorizedError(_ error: Error) -> Bool {
-        // Check if error is an unauthorized error (e.g., 401)
-        if let apiError = error as? APIError, case .unauthorized = apiError {
-            return true
-        }
-        
-        let nsError = error as NSError
-        return nsError.domain == "APIError" && nsError.code == 401
+    /// Create a preview instance for logged-out state
+    static func loggedOutPreview() -> AuthViewModel {
+        let mockViewModel = AuthViewModel(
+            authService: AuthService.shared,
+            keychainService: KeychainService.shared
+        )
+        mockViewModel.isLoggedIn = false
+        mockViewModel.currentUser = nil
+        return mockViewModel
     }
 }
 
@@ -347,25 +279,5 @@ extension User {
         user.runnerProfile = runnerProfile
         
         return user
-    }
-}
-
-extension AuthViewModel {
-    /// Create a preview instance with a logged-in user
-    static func loggedInPreview() -> AuthViewModel {
-        let viewModel = AuthViewModel()
-        viewModel.currentUser = User.preview
-        viewModel.isLoggedIn = true
-        viewModel.isLoading = false
-        return viewModel
-    }
-    
-    /// Create a preview instance with a logged-out user
-    static func loggedOutPreview() -> AuthViewModel {
-        let viewModel = AuthViewModel()
-        viewModel.isLoggedIn = false
-        viewModel.currentUser = nil
-        viewModel.isLoading = false
-        return viewModel
     }
 } 

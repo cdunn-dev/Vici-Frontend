@@ -33,3 +33,19 @@
 
 ### Next Steps
 - Further investigation into the `.pbxproj` file or attempting a more granular project reconstruction seem necessary to resolve the final blocking error. 
+
+### Update (April 17th, 2024) - Resolution Found ✅
+- **Root Cause Identified:** We found the source of the "Invalid redeclaration of 'APIClientProtocol'" error after conducting an in-depth file audit.
+- **Main Issue:** The protocol was declared in two locations:
+    1. Primary definition in `ViciMVP/Services/APIClientProtocol.swift` (correct)
+    2. Duplicate definition at the bottom of `ViciMVP/Services/APIClient.swift` (incorrect)
+- **Details:** The duplicate declaration in `APIClient.swift` was commented with "// Add protocol conformance back", suggesting it was a temporary fix that inadvertently became permanent.
+- **Fix Applied:** Removed the duplicate declaration in `APIClient.swift` while keeping the main declaration in `APIClientProtocol.swift`.
+- **Additional Find:** Also discovered and fixed a third declaration in `ViciMVPTests/StravaServiceTests.swift` that could cause issues during test builds.
+- **Current Status:** The build now completes successfully with the declaration errors resolved.
+
+### Lessons Learned
+1. **Check for Duplicates Thoroughly:** Even clean-looking code can have duplicates buried deep in files.
+2. **Commented Code is Tricky:** Be particularly careful with commented "add back" code that can be accidentally uncommented.
+3. **Test Files Matter:** Don't forget to check test files for duplicate declarations that can conflict with main code.
+4. **Systematic Approach Works:** A file-by-file audit was ultimately necessary to find the issue. 

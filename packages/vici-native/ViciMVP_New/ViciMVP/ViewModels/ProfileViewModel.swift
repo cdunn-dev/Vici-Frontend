@@ -4,17 +4,11 @@ import Combine
 import os.log
 
 /// ViewModel for handling user profile data and operations
-class ProfileViewModel: ObservableObject {
+class ProfileViewModel: BaseViewModel {
     // MARK: - Published Properties
     
     /// The current user profile
     @Published var user: User?
-    
-    /// Whether profile operations are loading
-    @Published var isLoading: Bool = false
-    
-    /// Error message if an operation fails
-    @Published var errorMessage: String?
     
     /// Whether the profile is being edited
     @Published var isEditing: Bool = false
@@ -26,13 +20,15 @@ class ProfileViewModel: ObservableObject {
     // MARK: - Dependencies
     
     private let authService: AuthService
-    private let logger = Logger(subsystem: "com.vici.app", category: "ProfileViewModel")
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
     
     init(authService: AuthService = .shared) {
         self.authService = authService
+        
+        // Initialize base class with the appropriate log category
+        super.init(logCategory: "ProfileViewModel")
         
         // Listen for auth state changes
         NotificationCenter.default.publisher(for: .authStateChanged)
@@ -49,64 +45,33 @@ class ProfileViewModel: ObservableObject {
     
     /// Load the user's profile from the authentication service
     func loadUserProfile() {
-        isLoading = true
-        errorMessage = nil
-        
-        logger.debug("Loading user profile")
-        
         Task {
-            do {
+            _ = await runTask(operation: "Load user profile") {
                 let user = try await authService.getCurrentUser()
-                
-                await MainActor.run {
-                    self.user = user
-                    self.isLoading = false
-                    self.setupFormFields()
-                    logger.debug("Successfully loaded profile for user: \(user.id)")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = "Failed to load profile: \(error.localizedDescription)"
-                    logger.error("Failed to load profile: \(error.localizedDescription)")
-                }
+                self.user = user
+                self.setupFormFields()
+                return user
             }
         }
     }
     
     /// Update the user's profile with edited information
-    func updateProfile() async -> Bool {
+    func updateProfile(allowEmailUpdate: Bool = false) async -> Bool {
         guard let userId = user?.id else {
-            errorMessage = "No user profile loaded"
+            handleError(DataError.notFound(entity: "User"))
             return false
         }
         
-        isLoading = true
-        errorMessage = nil
-        
-        logger.debug("Updating profile for user: \(userId)")
-        
-        do {
+        return await runTask(operation: "Update user profile") {
             let updatedUser = try await authService.updateProfile(
                 name: name.isEmpty ? nil : name,
-                email: nil // Not allowing email updates for security
+                email: allowEmailUpdate && user?.email != nil ? user?.email : nil
             )
             
-            await MainActor.run {
-                self.user = updatedUser
-                self.isLoading = false
-                self.isEditing = false
-                logger.debug("Successfully updated profile")
-            }
+            self.user = updatedUser
+            self.isEditing = false
             return true
-        } catch {
-            await MainActor.run {
-                self.isLoading = false
-                self.errorMessage = "Failed to update profile: \(error.localizedDescription)"
-                logger.error("Failed to update profile: \(error.localizedDescription)")
-            }
-            return false
-        }
+        } ?? false
     }
     
     /// Prepares the form fields for editing
@@ -123,28 +88,11 @@ class ProfileViewModel: ObservableObject {
     
     /// Logs the user out
     func logout() async -> Bool {
-        isLoading = true
-        errorMessage = nil
-        
-        logger.debug("Logging out user")
-        
-        do {
+        return await runTask(operation: "Logout user") {
             try await authService.logout()
-            
-            await MainActor.run {
-                self.user = nil
-                self.isLoading = false
-                logger.debug("Successfully logged out")
-            }
+            self.user = nil
             return true
-        } catch {
-            await MainActor.run {
-                self.isLoading = false
-                self.errorMessage = "Failed to logout: \(error.localizedDescription)"
-                logger.error("Failed to logout: \(error.localizedDescription)")
-            }
-            return false
-        }
+        } ?? false
     }
     
     /// Check if Strava is connected

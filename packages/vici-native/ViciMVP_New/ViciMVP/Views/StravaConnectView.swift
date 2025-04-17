@@ -7,10 +7,17 @@ import os.log
 /// A view that allows users to connect their Strava account to Vici
 struct StravaConnectView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var isConnecting = false
-    @State private var showError = false
-    @State private var errorMessage: String = ""
+    @StateObject private var viewModel: StravaConnectViewModel
     private let logger = Logger(subsystem: "com.vici.app", category: "StravaConnectView")
+    
+    init() {
+        // Use _StateObject to initialize the property wrapper with a new instance
+        // Will only be called once when the view is created
+        _viewModel = StateObject(wrappedValue: StravaConnectViewModel(
+            stravaService: StravaService.shared,
+            authViewModel: AuthViewModel.shared
+        ))
+    }
     
     var body: some View {
         ScrollView {
@@ -59,18 +66,15 @@ struct StravaConnectView: View {
                 Spacer()
             }
             .padding()
+            .loadingFullscreen(isLoading: viewModel.isLoading, message: "Processing...")
+            .errorToast(error: viewModel.appError) {
+                viewModel.clearError()
+            }
         }
         .navigationTitle("Strava Integration")
-        .alert(isPresented: $showError) {
-            Alert(
-                title: Text("Connection Error"),
-                message: Text(errorMessage),
-                dismissButton: .default(Text("OK"))
-            )
-        }
         .onAppear {
             setupNotificationObservers()
-            refreshConnectionStatus()
+            viewModel.checkStravaConnection()
         }
         .onDisappear {
             removeNotificationObservers()
@@ -83,15 +87,15 @@ struct StravaConnectView: View {
     private var connectionStatusView: some View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
-                Image(systemName: authViewModel.isStravaConnected ? "checkmark.circle.fill" : "xmark.circle.fill")
+                Image(systemName: viewModel.isStravaConnected ? "checkmark.circle.fill" : "xmark.circle.fill")
                     .font(.system(size: 32))
-                    .foregroundColor(authViewModel.isStravaConnected ? .green : .gray)
+                    .foregroundColor(viewModel.isStravaConnected ? .green : .gray)
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(authViewModel.isStravaConnected ? "Connected" : "Not Connected")
+                    Text(viewModel.isStravaConnected ? "Connected" : "Not Connected")
                         .font(.headline)
                     
-                    Text(authViewModel.isStravaConnected 
+                    Text(viewModel.isStravaConnected 
                          ? "Your Strava account is linked to Vici"
                          : "Connect to import your activities")
                         .font(.subheadline)
@@ -110,7 +114,7 @@ struct StravaConnectView: View {
     /// View containing action buttons based on connection state
     private var actionButtonsView: some View {
         VStack(spacing: 16) {
-            if authViewModel.isStravaConnected {
+            if viewModel.isStravaConnected {
                 // Disconnect button
                 Button(action: disconnectFromStrava) {
                     HStack {
@@ -123,6 +127,7 @@ struct StravaConnectView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
+                .disabled(viewModel.isLoading)
                 
                 // Sync button
                 Button(action: syncStravaData) {
@@ -136,6 +141,7 @@ struct StravaConnectView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
+                .disabled(viewModel.isLoading)
             } else {
                 // Connect button
                 Button(action: connectToStrava) {
@@ -149,14 +155,7 @@ struct StravaConnectView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
-                .disabled(isConnecting || !authViewModel.isLoggedIn)
-            }
-            
-            if isConnecting {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle())
-                    .scaleEffect(1.5)
-                    .padding()
+                .disabled(viewModel.isLoading || !authViewModel.isLoggedIn)
             }
             
             if !authViewModel.isLoggedIn {
@@ -226,52 +225,49 @@ struct StravaConnectView: View {
               let code = userInfo["code"] as? String,
               let state = userInfo["state"] as? String else {
             logger.error("Invalid callback notification: missing data")
-            showError(message: "Invalid callback data received")
+            viewModel.handleError(AuthError.unauthorized, message: "Invalid callback data received")
             return
         }
         
         logger.debug("Received Strava callback with code")
-        processStravaCallback(code: code, state: state)
+        
+        // Use StravaConnectViewModel to handle the callback
+        if let url = notification.userInfo?["url"] as? URL {
+            viewModel.handleStravaCallback(url: url)
+        } else {
+            // Fallback to code/state if URL not provided
+            processStravaCallback(code: code, state: state)
+        }
     }
     
     private func handleCallbackFailure(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let error = userInfo["error"] as? String else {
-            showError(message: "Unknown error processing Strava callback")
+            viewModel.handleError(AuthError.unauthorized, message: "Unknown error processing Strava callback")
             return
         }
         
         logger.error("Strava callback failed: \(error)")
-        showError(message: "Failed to connect: \(error)")
+        viewModel.handleError(AuthError.unauthorized, message: "Failed to connect: \(error)")
     }
     
     private func processStravaCallback(code: String, state: String) {
         guard let userId = authViewModel.currentUser?.id else {
-            showError(message: "You need to be logged in to connect Strava")
+            viewModel.handleError(AuthError.unauthorized, message: "You need to be logged in to connect Strava")
             return
         }
         
-        isConnecting = true
-        
         Task {
+            let stravaService = StravaService()
             do {
-                let stravaService = StravaService()
                 try await stravaService.exchangeCodeForToken(userId: userId, code: code, state: state)
-                
-                await MainActor.run {
-                    authViewModel.updateStravaConnectionStatus(isConnected: true)
-                    isConnecting = false
-                    refreshConnectionStatus()
-                }
-            } catch let error as StravaError {
-                await MainActor.run {
-                    showError(message: error.errorDescription ?? "Failed to exchange Strava token")
-                    isConnecting = false
-                }
+                viewModel.isStravaConnected = true
+                authViewModel.updateStravaConnectionStatus(isConnected: true)
             } catch {
-                await MainActor.run {
-                    showError(message: "An unexpected error occurred: \(error.localizedDescription)")
-                    isConnecting = false
+                if let stravaError = error as? StravaError {
+                    viewModel.handleError(stravaError)
+                } else {
+                    viewModel.handleError(error)
                 }
             }
         }
@@ -279,149 +275,49 @@ struct StravaConnectView: View {
     
     // MARK: - Actions
     
-    /// Refreshes the Strava connection status
-    private func refreshConnectionStatus() {
-        Task {
-            await authViewModel.refreshUserProfile()
-        }
-    }
-    
     /// Initiates the OAuth flow to connect to Strava
     private func connectToStrava() {
-        guard let userId = authViewModel.currentUser?.id else {
-            showError(message: "You need to be logged in to connect Strava")
-            return
-        }
-        
-        isConnecting = true
-        
-        Task {
-            do {
-                let stravaService = StravaService()
-                let authURL = try await stravaService.getAuthorizationURL(userId: userId)
-                
-                // Open the URL in Safari
-                if UIApplication.shared.canOpenURL(authURL) {
-                    await MainActor.run {
-                        UIApplication.shared.open(authURL)
-                        // The app will handle the callback via URL scheme
-                    }
-                } else {
-                    throw StravaError.connectionFailed(reason: "Unable to open Safari")
-                }
-                
-                await MainActor.run {
-                    isConnecting = false
-                }
-            } catch let error as StravaError {
-                await MainActor.run {
-                    showError(message: error.errorDescription ?? "Failed to connect to Strava")
-                    isConnecting = false
-                }
-            } catch {
-                await MainActor.run {
-                    showError(message: "An unexpected error occurred: \(error.localizedDescription)")
-                    isConnecting = false
-                }
-            }
-        }
+        viewModel.initiateStravaConnection()
     }
     
     /// Disconnects the user's Strava account
     private func disconnectFromStrava() {
-        guard let userId = authViewModel.currentUser?.id else {
-            showError(message: "You need to be logged in to disconnect Strava")
-            return
-        }
-        
-        isConnecting = true
-        
-        Task {
-            do {
-                let stravaService = StravaService()
-                try await stravaService.disconnectStrava(userId: userId)
-                
-                await MainActor.run {
-                    authViewModel.updateStravaConnectionStatus(isConnected: false)
-                    isConnecting = false
-                }
-            } catch let error as StravaError {
-                await MainActor.run {
-                    showError(message: error.errorDescription ?? "Failed to disconnect from Strava")
-                    isConnecting = false
-                }
-            } catch {
-                await MainActor.run {
-                    showError(message: "An unexpected error occurred: \(error.localizedDescription)")
-                    isConnecting = false
-                }
-            }
-        }
+        viewModel.disconnectStrava()
     }
     
     /// Syncs latest activities from Strava
     private func syncStravaData() {
         guard let userId = authViewModel.currentUser?.id else {
-            showError(message: "You need to be logged in to sync Strava data")
+            viewModel.handleError(AuthError.unauthorized, message: "You need to be logged in to sync Strava data")
             return
         }
         
-        isConnecting = true
-        
         Task {
-            do {
-                let stravaService = StravaService()
-                try await stravaService.syncActivities(userId: userId)
-                
-                await MainActor.run {
-                    isConnecting = false
-                    // You might want to show a success message or update a lastSynced property
-                }
-            } catch let error as StravaError {
-                await MainActor.run {
-                    showError(message: error.errorDescription ?? "Failed to sync Strava data")
-                    isConnecting = false
-                }
-            } catch {
-                await MainActor.run {
-                    showError(message: "An unexpected error occurred: \(error.localizedDescription)")
-                    isConnecting = false
-                }
+            await viewModel.runTask(operation: "Sync Strava activities") {
+                try await StravaService.shared.syncActivities(userId: userId)
+                return true
             }
         }
-    }
-    
-    /// Shows an error message
-    private func showError(message: String) {
-        errorMessage = message
-        showError = true
     }
 }
 
 // MARK: - Preview
-struct StravaConnectView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            StravaConnectView()
-                .environmentObject(previewAuthViewModel(isConnected: false))
-        }
-        .previewDisplayName("Not Connected")
-        
-        NavigationView {
-            StravaConnectView()
-                .environmentObject(previewAuthViewModel(isConnected: true))
-        }
-        .previewDisplayName("Connected")
+#Preview("Connected") {
+    NavigationView {
+        StravaConnectView()
+            .environmentObject(previewAuthViewModel(isConnected: true))
     }
-    
-    static func previewAuthViewModel(isConnected: Bool) -> AuthViewModel {
-        let viewModel = AuthViewModel(
-            authService: AuthService(),
-            keychainService: KeychainService()
-        )
-        viewModel.isStravaConnected = isConnected
-        viewModel.isLoggedIn = true
-        viewModel.currentUser = User(id: "test-user", name: "Test User", email: "test@example.com")
-        return viewModel
+}
+
+#Preview("Not Connected") {
+    NavigationView {
+        StravaConnectView()
+            .environmentObject(previewAuthViewModel(isConnected: false))
     }
+}
+
+private func previewAuthViewModel(isConnected: Bool) -> AuthViewModel {
+    let viewModel = AuthViewModel.loggedInPreview()
+    viewModel.isStravaConnected = isConnected
+    return viewModel
 } 

@@ -40,38 +40,21 @@ struct AuthView: View {
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                         
-                        if let errorMessage = authViewModel.errorMessage {
-                            Text(errorMessage)
-                                .foregroundColor(.red)
-                                .font(.footnote)
-                                .padding(.top, 5)
-                        }
-                        
                         Button(action: handleAuthAction) {
-                            if authViewModel.isLoading {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.accentColor)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-                            } else {
-                                Text(isRegistering ? "Register" : "Login")
-                                    .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.accentColor)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-                            }
+                            Text(isRegistering ? "Register" : "Login")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.accentColor)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
                         }
                         .disabled(email.isEmpty || password.isEmpty || (isRegistering && name.isEmpty) || authViewModel.isLoading)
                         .padding(.top, 10)
                         
                         Button(action: { 
                             isRegistering.toggle()
-                            authViewModel.errorMessage = nil
+                            authViewModel.clearError()
                         }) {
                             Text(isRegistering ? "Already have an account? Login" : "Don't have an account? Register")
                                 .foregroundColor(.accentColor)
@@ -106,12 +89,16 @@ struct AuthView: View {
                 }
                 .navigationBarHidden(true)
                 .ignoresSafeArea(.keyboard)
+                .loadingFullscreen(isLoading: authViewModel.isLoading, message: isRegistering ? "Creating account..." : "Signing in...")
+                .errorToast(error: authViewModel.appError) {
+                    authViewModel.clearError()
+                }
             }
         }
     }
     
     private func handleAuthAction() {
-        authViewModel.errorMessage = nil 
+        authViewModel.clearError()
         
         if isRegistering {
             authViewModel.register(email: email, password: password, name: name)
@@ -121,9 +108,7 @@ struct AuthView: View {
     }
 }
 
-struct AuthView_Previews: PreviewProvider {
-    static var previews: some View {
-        AuthView()
-            .environmentObject(AuthViewModel.loggedOutPreview())
-    }
+#Preview {
+    AuthView()
+        .environmentObject(AuthViewModel.loggedOutPreview())
 } 

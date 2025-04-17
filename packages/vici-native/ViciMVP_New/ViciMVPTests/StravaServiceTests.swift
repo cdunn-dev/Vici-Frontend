@@ -18,6 +18,9 @@ enum StravaError: Error {
 */
 
 // Define protocols needed for testing if they're not accessible
+// REMOVED: Duplicate APIClientProtocol definition that was causing conflicts
+// The protocol is already defined in the main app and available via @testable import
+/*
 protocol APIClientProtocol {
     func get<T: Decodable>(endpoint: String, parameters: [String: Any]?, headers: [String: String]?) async throws -> T
     func post<T: Decodable>(endpoint: String, body: Any?, headers: [String: String]?) async throws -> T
@@ -25,6 +28,7 @@ protocol APIClientProtocol {
     func patch<T: Decodable>(endpoint: String, body: Any?, headers: [String: String]?) async throws -> T
     func delete<T: Decodable>(endpoint: String, headers: [String: String]?) async throws -> T
 }
+*/
 
 // Define StravaService for testing
 class StravaService {

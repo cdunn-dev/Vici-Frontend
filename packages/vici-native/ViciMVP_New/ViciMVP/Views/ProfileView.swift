@@ -48,43 +48,6 @@ struct ProfileView: View {
                 .refreshable {
                     viewModel.loadUserProfile()
                 }
-                
-                // Loading overlay
-                if viewModel.isLoading {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                    ProgressView()
-                        .scaleEffect(1.5)
-                        .tint(.white)
-                }
-                
-                // Error alert
-                if let errorMessage = viewModel.errorMessage {
-                    VStack {
-                        Spacer()
-                        
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.white)
-                            
-                            Text(errorMessage)
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                viewModel.errorMessage = nil
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        .padding()
-                        .background(Color.red)
-                        .cornerRadius(10)
-                        .padding()
-                    }
-                }
             }
             .navigationTitle("Profile")
             .toolbar {
@@ -121,6 +84,11 @@ struct ProfileView: View {
             }
             .onAppear {
                 viewModel.loadUserProfile()
+            }
+            // Use the new loading and error toast modifiers
+            .loadingFullscreen(isLoading: viewModel.isLoading, message: "Loading profile...")
+            .errorToast(error: viewModel.appError) {
+                viewModel.clearError()
             }
         }
     }
@@ -340,19 +308,20 @@ struct ProfileView: View {
     
     // MARK: - Actions
     
+    /// Action to save profile changes
     private func saveProfile() {
         Task {
             if await viewModel.updateProfile() {
-                // Success - UI already updated by the view model
+                // Success handled in ViewModel
             }
         }
     }
     
+    /// Action to log the user out
     private func logoutUser() {
         Task {
             if await viewModel.logout() {
-                // Navigate to login screen would happen here
-                // This is handled by the app's root view based on auth state
+                // Success handled in ViewModel
             }
         }
     }

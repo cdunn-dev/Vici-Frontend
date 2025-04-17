@@ -25,7 +25,7 @@ struct ViciConversation: Identifiable, Codable {
 }
 
 /// Enum representing different types of errors that can occur in AskViciViewModel
-enum AskViciError: Error, Identifiable {
+enum AskViciError: AppError {
     case networkError(String)
     case serverError(String)
     case authenticationError
@@ -34,19 +34,19 @@ enum AskViciError: Error, Identifiable {
     case rateLimited
     case noActivePlan
     
-    var id: String {
+    var errorCode: String {
         switch self {
-        case .networkError: return "networkError"
-        case .serverError: return "serverError"
-        case .authenticationError: return "authenticationError"
-        case .unknown: return "unknown"
-        case .offline: return "offline"
-        case .rateLimited: return "rateLimited"
-        case .noActivePlan: return "noActivePlan"
+        case .networkError: return "askvici.network.error"
+        case .serverError: return "askvici.server.error"
+        case .authenticationError: return "askvici.authentication.error"
+        case .unknown: return "askvici.unknown.error"
+        case .offline: return "askvici.offline"
+        case .rateLimited: return "askvici.rate.limited"
+        case .noActivePlan: return "askvici.no.active.plan"
         }
     }
     
-    var message: String {
+    var errorDescription: String? {
         switch self {
         case .networkError(let message):
             return message
@@ -64,28 +64,52 @@ enum AskViciError: Error, Identifiable {
             return "No active training plan found. Create a plan first to get personalized advice."
         }
     }
+    
+    var recoverySuggestion: String? {
+        switch self {
+        case .networkError, .serverError:
+            return "Please try again later or check your internet connection."
+        case .authenticationError:
+            return "Log in to continue."
+        case .unknown:
+            return "Please try again or contact support if the issue persists."
+        case .offline:
+            return "Check your internet connection and try again."
+        case .rateLimited:
+            return "Wait a moment before asking another question."
+        case .noActivePlan:
+            return "Create a training plan to get personalized advice."
+        }
+    }
 }
 
 /// ViewModel for the AskVici feature
-class AskViciViewModel: ObservableObject {
+@MainActor
+class AskViciViewModel: BaseViewModel {
     // MARK: - Published Properties
     @Published var conversations: [ViciConversation] = []
-    @Published var isLoading = false
-    @Published var error: AskViciError?
-    @Published var showError = false
     @Published var isOffline = false
     
     // MARK: - Private Properties
-    private let llmService = LLMService.shared
-    private let apiClient = APIClient.shared
-    private let trainingService = TrainingService.shared
-    private var cancellables = Set<AnyCancellable>()
+    private let llmService: LLMService
+    private let apiClient: APIClient
+    private let trainingService: TrainingService
     private var activePlanId: String?
-    private let logger = Logger(subsystem: "com.vici.app", category: "AskViciViewModel")
     
     // MARK: - Initialization
-    init(activePlanId: String? = nil) {
+    init(
+        activePlanId: String? = nil,
+        llmService: LLMService = .shared,
+        apiClient: APIClient = .shared,
+        trainingService: TrainingService = .shared
+    ) {
         self.activePlanId = activePlanId
+        self.llmService = llmService
+        self.apiClient = apiClient
+        self.trainingService = trainingService
+        
+        super.init(logCategory: "AskViciViewModel")
+        
         logger.debug("Initializing AskViciViewModel with activePlanId: \(activePlanId ?? "nil")")
         checkNetworkStatus()
         checkForActivePlan()
@@ -100,16 +124,13 @@ class AskViciViewModel: ObservableObject {
         logger.debug("Checking for active training plan")
         
         Task {
-            do {
-                let plan = try await trainingService.getActivePlan()
-                await MainActor.run {
-                    self.activePlanId = plan?.id
-                    logger.debug("Active plan ID set to: \(self.activePlanId ?? "nil")")
-                }
-            } catch {
-                logger.error("Failed to get active plan: \(error.localizedDescription)")
-                // Not setting an error here as this is just informational
-                // We can still handle general questions without a plan
+            let plan = await runTask(operation: "Check for active training plan", showLoading: false) {
+                try await trainingService.getActivePlan()
+            }
+            
+            if let plan = plan {
+                self.activePlanId = plan.id
+                logger.debug("Active plan ID set to: \(self.activePlanId ?? "nil")")
             }
         }
     }
@@ -124,12 +145,9 @@ class AskViciViewModel: ObservableObject {
         
         if isOffline {
             logger.warning("Attempted to send question while offline")
-            self.error = .offline
-            self.showError = true
+            handleError(AskViciError.offline)
             return
         }
-        
-        isLoading = true
         
         // If we have an active plan, ask about that plan, otherwise ask a general question
         let task = activePlanId != nil ?
@@ -137,36 +155,26 @@ class AskViciViewModel: ObservableObject {
             askGeneralQuestion(question: question)
         
         Task {
-            do {
-                let response = try await task
-                logger.debug("Received response from LLM service")
+            let response = await runTask(operation: "Send question to Vici") {
+                try await task
+            }
+            
+            if let response = response {
+                // Create conversation from response
+                let conversation = ViciConversation(
+                    id: UUID().uuidString,
+                    question: question,
+                    answer: response.answerText,
+                    date: Date(),
+                    hasStructuredChanges: response.hasStructuredChanges
+                )
                 
-                await MainActor.run {
-                    self.isLoading = false
-                    
-                    // Create conversation from response
-                    let conversation = ViciConversation(
-                        id: UUID().uuidString,
-                        question: question,
-                        answer: response.answerText,
-                        date: Date(),
-                        hasStructuredChanges: response.hasStructuredChanges
-                    )
-                    
-                    // Insert at beginning of array
-                    self.conversations.insert(conversation, at: 0)
-                    
-                    // Save conversations
-                    self.saveConversations()
-                    logger.debug("Saved new conversation to storage")
-                }
-            } catch {
-                logger.error("Error receiving response: \(error.localizedDescription)")
+                // Insert at beginning of array
+                self.conversations.insert(conversation, at: 0)
                 
-                await MainActor.run {
-                    self.isLoading = false
-                    self.handleError(error)
-                }
+                // Save conversations
+                self.saveConversations()
+                logger.debug("Saved new conversation to storage")
             }
         }
     }
@@ -184,11 +192,22 @@ class AskViciViewModel: ObservableObject {
         loadFromUserDefaults(key: "vici_plan_\(planId)_conversations")
     }
     
-    /// Clears the error state
-    func clearError() {
-        logger.debug("Clearing error state")
-        error = nil
-        showError = false
+    /// Check network connectivity status
+    func checkNetworkStatus() {
+        // This would integrate with a NetworkMonitor in a real implementation
+        // For now, we'll assume online status and check when we make calls
+        logger.debug("Checking network status")
+        
+        Task {
+            do {
+                let _ = try await apiClient.get(endpoint: "health")
+                self.isOffline = false
+                logger.debug("Network check passed - online")
+            } catch {
+                self.isOffline = true
+                logger.warning("Network check failed - offline")
+            }
+        }
     }
     
     // MARK: - Private Methods
@@ -290,43 +309,6 @@ class AskViciViewModel: ObservableObject {
         }
         
         return .unknown("An unexpected error occurred: \(error.localizedDescription)")
-    }
-    
-    /// Handle errors from API calls
-    /// - Parameter error: The error to handle
-    private func handleError(_ error: Error) {
-        let viciError = error as? AskViciError ?? convertToAskViciError(error)
-        logger.error("Handling error: \(viciError.id) - \(viciError.message)")
-        
-        self.error = viciError
-        self.showError = true
-        
-        if case .offline = viciError {
-            self.isOffline = true
-        }
-    }
-    
-    /// Check network connectivity status
-    private func checkNetworkStatus() {
-        // This would integrate with a NetworkMonitor in a real implementation
-        // For now, we'll assume online status and check when we make calls
-        logger.debug("Checking network status")
-        
-        // Make a lightweight API call to verify connectivity
-        Task {
-            do {
-                let _ = try await apiClient.get(endpoint: "health")
-                await MainActor.run {
-                    self.isOffline = false
-                    logger.debug("Network check passed - online")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isOffline = true
-                    logger.warning("Network check failed - offline")
-                }
-            }
-        }
     }
     
     /// Save conversations to UserDefaults

@@ -19,51 +19,61 @@ struct TrainingPlanView: View {
     @State private var selectedWorkout: Workout?
     @State private var completionNotes = ""
     @State private var isRefreshing = false
+    @State private var showingCreatePlanSheet = false
+    @State private var showingSettings = false
     
     // MARK: - Body
     var body: some View {
         NavigationView {
             ZStack {
-                if viewModel.isLoading && !isRefreshing {
-                    ProgressView("Loading your plan...")
-                } else if let errorType = viewModel.errorType {
-                    errorView(for: errorType)
-                } else {
-                    mainContentView
-                }
-            }
-            .navigationTitle("My Plan")
-            .sheet(isPresented: $viewModel.showCreatePlan) {
-                // Create Plan sheet is out of scope for this implementation
-                Text("Create Plan View")
-                    .padding()
-            }
-            .sheet(isPresented: $viewModel.showEditPlan) {
-                // Edit Plan sheet is out of scope for this implementation
-                Text("Edit Plan View")
-                    .padding()
-            }
-            .sheet(isPresented: $showCompleteWorkoutSheet) {
-                CompleteWorkoutView(workout: selectedWorkout, notes: $completionNotes) { notes in
-                    if let workout = selectedWorkout {
-                        Task {
-                            await viewModel.completeWorkout(id: workout.id, notes: notes)
-                            completionNotes = ""
-                            selectedWorkout = nil
-                        }
+                // Main content
+                VStack {
+                    if let activePlan = viewModel.activePlan {
+                        // Plan exists - show details
+                        planDetailsView(plan: activePlan)
+                    } else {
+                        // No active plan - show empty state
+                        noPlanView
                     }
                 }
-            }
-            .onAppear {
-                viewModel.loadActivePlan()
-            }
-            .refreshable {
-                await refreshData()
-            }
-            .overlay(alignment: .top) {
-                if viewModel.isOffline {
-                    offlineBanner
+                .navigationTitle("Training Plan")
+                .navigationBarItems(
+                    trailing: HStack {
+                        // Navigation bar buttons...
+                        Button(action: {
+                            refresh()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        
+                        if viewModel.activePlan != nil {
+                            Button(action: {
+                                showingSettings = true
+                            }) {
+                                Image(systemName: "gear")
+                            }
+                        }
+                    }
+                )
+                .sheet(isPresented: $showingCreatePlanSheet) {
+                    // Create plan sheet...
+                    Text("Create Plan Sheet")
                 }
+                .sheet(isPresented: $showingSettings) {
+                    // Settings sheet...
+                    Text("Settings Sheet")
+                }
+                .onAppear {
+                    refresh()
+                }
+                .refreshable {
+                    refresh()
+                }
+            }
+            // Use our standardized loading and error components
+            .loadingFullscreen(isLoading: viewModel.isLoading, message: "Loading your training plan...")
+            .errorToast(error: viewModel.appError) {
+                viewModel.clearError()
             }
         }
     }
@@ -120,7 +130,7 @@ struct TrainingPlanView: View {
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Button {
-                    viewModel.showCreatePlan = true
+                    showingCreatePlanSheet = true
                 } label: {
                     Label("Create Plan", systemImage: "plus.circle")
                 }
@@ -130,9 +140,7 @@ struct TrainingPlanView: View {
                 
                 // Manual refresh button
                 Button {
-                    Task {
-                        await refreshData()
-                    }
+                    refresh()
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
@@ -140,9 +148,9 @@ struct TrainingPlanView: View {
                 
                 if viewModel.activePlan != nil {
                     Button {
-                        viewModel.showEditPlan = true
+                        showingSettings = true
                     } label: {
-                        Label("Edit Plan", systemImage: "pencil.circle")
+                        Label("Settings", systemImage: "gear")
                     }
                     .buttonStyle(.bordered)
                 }
@@ -195,7 +203,7 @@ struct TrainingPlanView: View {
             }
             
             Button("Try Again") {
-                viewModel.refreshAll()
+                refresh()
             }
             .buttonStyle(.borderedProminent)
         }
@@ -221,7 +229,7 @@ struct TrainingPlanView: View {
                 .foregroundColor(.secondary)
             
             Button("Create New Plan") {
-                viewModel.showCreatePlan = true
+                showingCreatePlanSheet = true
             }
             .buttonStyle(.borderedProminent)
             .padding(.top)
@@ -250,7 +258,7 @@ struct TrainingPlanView: View {
             Button("Log In") {
                 // In real app, this would navigate to login screen
                 // For now, just try to refresh
-                viewModel.refreshAll()
+                refresh()
             }
             .buttonStyle(.borderedProminent)
             .padding(.top)
@@ -277,7 +285,7 @@ struct TrainingPlanView: View {
                 .foregroundColor(.secondary)
             
             Button("Try Again") {
-                viewModel.refreshAll()
+                refresh()
             }
             .buttonStyle(.borderedProminent)
             .padding(.top)

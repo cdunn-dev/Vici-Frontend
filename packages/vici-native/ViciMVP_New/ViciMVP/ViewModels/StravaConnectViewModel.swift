@@ -4,17 +4,12 @@ import Combine
 import os.log
 
 /// ViewModel for handling Strava connection operations
-class StravaConnectViewModel: ObservableObject {
+@MainActor
+class StravaConnectViewModel: BaseViewModel {
     // MARK: - Published Properties
     
     /// Whether there is an active Strava connection
     @Published var isStravaConnected = false
-    
-    /// Whether operations are loading
-    @Published var isLoading = false
-    
-    /// Error message if an operation fails
-    @Published var errorMessage: String?
     
     /// Whether to show the web view for Strava OAuth
     @Published var showWebView = false
@@ -26,13 +21,15 @@ class StravaConnectViewModel: ObservableObject {
     
     private let stravaService: StravaServiceProtocol
     private let authViewModel: AuthViewModel
-    private let logger = Logger(subsystem: "com.vici.app", category: "StravaConnectViewModel")
     
     // MARK: - Initialization
     
     init(stravaService: StravaServiceProtocol = StravaService.shared, authViewModel: AuthViewModel) {
         self.stravaService = stravaService
         self.authViewModel = authViewModel
+        
+        // Initialize with logger category
+        super.init(logCategory: "StravaConnectViewModel")
         
         // Initialize connection state from auth view model
         self.isStravaConnected = authViewModel.isStravaConnected
@@ -43,30 +40,21 @@ class StravaConnectViewModel: ObservableObject {
     /// Checks the current Strava connection status
     func checkStravaConnection() {
         guard let userId = authViewModel.currentUser?.id else {
-            errorMessage = "You must be logged in to connect with Strava"
+            handleError(AuthError.unauthorized, message: "You must be logged in to connect with Strava")
             return
         }
         
         logger.debug("Checking Strava connection for user: \(userId)")
-        isLoading = true
-        errorMessage = nil
         
         Task {
-            do {
-                let isConnected = try await stravaService.checkConnectionStatus(userId: userId)
-                
-                await MainActor.run {
-                    self.isStravaConnected = isConnected
-                    self.authViewModel.updateStravaConnectionStatus(isConnected: isConnected)
-                    self.isLoading = false
-                    self.logger.debug("Strava connection status: \(isConnected ? "connected" : "not connected")")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = "Failed to check Strava connection: \(error.localizedDescription)"
-                    self.logger.error("Failed to check Strava connection: \(error.localizedDescription)")
-                }
+            let isConnected = await runTask(operation: "Check Strava connection") {
+                try await stravaService.checkConnectionStatus(userId: userId)
+            }
+            
+            if let isConnected = isConnected {
+                self.isStravaConnected = isConnected
+                self.authViewModel.updateStravaConnectionStatus(isConnected: isConnected)
+                self.logger.debug("Strava connection status: \(isConnected ? "connected" : "not connected")")
             }
         }
     }
@@ -74,30 +62,21 @@ class StravaConnectViewModel: ObservableObject {
     /// Initiates the Strava connection process
     func initiateStravaConnection() {
         guard let userId = authViewModel.currentUser?.id else {
-            errorMessage = "You must be logged in to connect with Strava"
+            handleError(AuthError.unauthorized, message: "You must be logged in to connect with Strava")
             return
         }
         
         logger.debug("Initiating Strava connection for user: \(userId)")
-        isLoading = true
-        errorMessage = nil
         
         Task {
-            do {
-                let url = try await stravaService.getAuthorizationURL(userId: userId)
-                
-                await MainActor.run {
-                    self.authURL = url
-                    self.showWebView = true
-                    self.isLoading = false
-                    self.logger.debug("Got authorization URL for Strava: \(url)")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = "Failed to initiate Strava connection: \(error.localizedDescription)"
-                    self.logger.error("Failed to initiate Strava connection: \(error.localizedDescription)")
-                }
+            let url = await runTask(operation: "Get Strava authorization URL") {
+                try await stravaService.getAuthorizationURL(userId: userId)
+            }
+            
+            if let url = url {
+                self.authURL = url
+                self.showWebView = true
+                self.logger.debug("Got authorization URL for Strava: \(url)")
             }
         }
     }
@@ -106,7 +85,7 @@ class StravaConnectViewModel: ObservableObject {
     func handleStravaCallback(url: URL) {
         guard let userId = authViewModel.currentUser?.id,
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-            errorMessage = "Invalid callback URL"
+            handleError(AuthError.unauthorized, message: "Invalid callback URL")
             logger.error("Invalid callback URL: \(url)")
             return
         }
@@ -115,10 +94,10 @@ class StravaConnectViewModel: ObservableObject {
         let queryItems = components.queryItems ?? []
         guard let code = queryItems.first(where: { $0.name == "code" })?.value else {
             if let error = queryItems.first(where: { $0.name == "error" })?.value {
-                errorMessage = "Strava authorization failed: \(error)"
+                handleError(AuthError.unauthorized, message: "Strava authorization failed: \(error)")
                 logger.error("Strava authorization failed: \(error)")
             } else {
-                errorMessage = "Missing authorization code"
+                handleError(AuthError.unauthorized, message: "Missing authorization code")
                 logger.error("Missing authorization code in callback URL")
             }
             return
@@ -127,27 +106,20 @@ class StravaConnectViewModel: ObservableObject {
         let state = queryItems.first(where: { $0.name == "state" })?.value
         
         logger.debug("Processing Strava callback with code: \(code), state: \(state ?? "nil")")
-        isLoading = true
-        errorMessage = nil
         
         Task {
-            do {
+            let success = await runTask(operation: "Exchange code for Strava token") {
                 try await stravaService.exchangeCodeForToken(userId: userId, code: code, state: state)
-                
-                await MainActor.run {
-                    self.isStravaConnected = true
-                    self.authViewModel.updateStravaConnectionStatus(isConnected: true)
-                    self.isLoading = false
-                    self.showWebView = false
-                    self.logger.debug("Successfully exchanged code for Strava token")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.showWebView = false
-                    self.errorMessage = "Failed to complete Strava authorization: \(error.localizedDescription)"
-                    self.logger.error("Failed to exchange code for token: \(error.localizedDescription)")
-                }
+                return true
+            }
+            
+            if success == true {
+                self.isStravaConnected = true
+                self.authViewModel.updateStravaConnectionStatus(isConnected: true)
+                self.showWebView = false
+                self.logger.debug("Successfully exchanged code for Strava token")
+            } else {
+                self.showWebView = false
             }
         }
     }
@@ -155,30 +127,22 @@ class StravaConnectViewModel: ObservableObject {
     /// Disconnects the user's Strava account
     func disconnectStrava() {
         guard let userId = authViewModel.currentUser?.id else {
-            errorMessage = "You must be logged in to disconnect Strava"
+            handleError(AuthError.unauthorized, message: "You must be logged in to disconnect Strava")
             return
         }
         
         logger.debug("Disconnecting Strava for user: \(userId)")
-        isLoading = true
-        errorMessage = nil
         
         Task {
-            do {
+            let success = await runTask(operation: "Disconnect Strava account") {
                 try await stravaService.disconnectAccount(userId: userId)
-                
-                await MainActor.run {
-                    self.isStravaConnected = false
-                    self.authViewModel.updateStravaConnectionStatus(isConnected: false)
-                    self.isLoading = false
-                    self.logger.debug("Successfully disconnected Strava account")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = "Failed to disconnect Strava: \(error.localizedDescription)"
-                    self.logger.error("Failed to disconnect Strava: \(error.localizedDescription)")
-                }
+                return true
+            }
+            
+            if success == true {
+                self.isStravaConnected = false
+                self.authViewModel.updateStravaConnectionStatus(isConnected: false)
+                self.logger.debug("Successfully disconnected Strava account")
             }
         }
     }
