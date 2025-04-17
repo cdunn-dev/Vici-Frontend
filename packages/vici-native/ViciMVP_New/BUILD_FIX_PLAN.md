@@ -53,8 +53,8 @@ We will address these issues in a systematic order:
 - [x] Create/fix TrainingPlan+Preview.swift with sample data
 - [x] Create/fix Activity+Preview.swift with sample data
 - [x] Create/fix User+Preview.swift with sample data
-- [ ] Ensure preview extensions are properly imported where needed
-- [ ] Verify all preview properties match those referenced in views
+- [x] Ensure preview extensions are properly imported where needed
+- [x] Verify all preview properties match those referenced in views
 
 #### Step 3: Resolve Remaining Redeclaration Issues
 - [x] Fix AppDelegate redeclaration
@@ -89,7 +89,7 @@ We will address these issues in a systematic order:
 | Step | Status | Date | Notes |
 |------|--------|------|-------|
 | 1: BaseViewModel Implementation | Completed | April 17, 2024 | Created BaseViewModel.swift with comprehensive implementation that supports both default and custom initialization, proper error handling, task management, and publisher handling |
-| 2: Model Preview Extensions | In Progress | April 17, 2024 | Created preview extensions for all model types; Need to ensure proper imports and references |
+| 2: Model Preview Extensions | Completed | April 18, 2024 | Created preview extensions for all model types; Added missing methods like previewNewUser; Added computed properties to match ModelValidation expectations; Fixed property references |
 | 3: Redeclaration Issues | In Progress | April 17, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved; Need to fix KeychainService redeclaration |
 | 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel; Made APIError public and its properties public |
 | 5: Method Reference Fixes | In Progress | April 17, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Need to fix logger accessibility and error handling |
