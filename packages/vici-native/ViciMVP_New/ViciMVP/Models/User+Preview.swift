@@ -6,158 +6,263 @@ import Foundation
 
 /// Preview extensions for the User model to help with the transition from mock data
 extension User {
-    /// A sample user with complete profile for previews
+    /// Sample user for preview purposes
     static var previewUser: User {
-        return User(
-            id: "preview-user-123",
-            name: "Jane Smith",
-            email: "jane@example.com",
-            height: 173.0,
-            weight: 68.0,
-            birthdate: Date(),
+        User(
+            id: "user-123",
+            email: "runner@example.com",
+            name: "Test Runner",
             createdAt: Date(),
             updatedAt: Date(),
-            isStravaConnected: true,
-            trainingPlans: []
+            settings: UserSettings(
+                id: "settings-123",
+                userId: "user-123",
+                distanceUnit: .km,
+                language: "en",
+                coachingStyle: .balanced,
+                notificationPreferences: NotificationPreferences(
+                    id: "notif-123",
+                    email: true,
+                    push: true,
+                    sms: false,
+                    inApp: true
+                ),
+                privacyDataSharing: true
+            ),
+            runnerProfile: RunnerProfile(
+                id: "profile-123",
+                userId: "user-123",
+                experienceLevel: .intermediate,
+                weeklyRunningFrequency: 4,
+                weeklyRunningDistanceKm: 40,
+                typicalPaceMinPerKm: 5 * 60,
+                recentRaces: [],
+                primaryGoal: "Run a marathon",
+                injuries: [],
+                maxHR: 185,
+                restingHR: 65,
+                dateOfBirth: Calendar.current.date(byAdding: .year, value: -30, to: Date()),
+                weight: 70.5,
+                height: 175.0,
+                sex: .preferNotToSay
+            ),
+            stravaConnection: nil
         )
     }
     
-    /// A newly registered user for previews
+    /// New user for preview and onboarding state
     static var previewNewUser: User {
         User(
-            id: "user-2",
-            email: "new.runner@example.com",
+            id: "new-user-123",
+            email: "new@example.com",
             name: "New Runner",
-            profileImageUrl: nil,
-            gender: nil,
-            dateOfBirth: nil,
-            weight: nil,
-            height: nil,
-            preferredUnits: "metric",
-            experienceLevel: nil,
-            trainingFrequency: nil,
-            preferredWorkoutTimes: nil,
-            goals: nil,
-            isOnboarded: false,
-            isActive: true,
             createdAt: Date(),
             updatedAt: Date(),
-            stravaConnected: false,
-            garminConnected: false
+            settings: UserSettings(
+                id: "settings-new",
+                userId: "new-user-123",
+                distanceUnit: .km,
+                language: "en",
+                coachingStyle: .balanced,
+                notificationPreferences: NotificationPreferences(
+                    id: "notif-new",
+                    email: true,
+                    push: true,
+                    sms: false,
+                    inApp: true
+                ),
+                privacyDataSharing: true
+            ),
+            runnerProfile: nil, // New user hasn't completed profile
+            stravaConnection: nil
         )
     }
     
-    /// A collection of users for previews
+    /// Sample user with Strava connected
+    static var previewUserWithStrava: User {
+        var user = previewUser
+        
+        // Add Strava connection
+        user.stravaConnection = StravaConnection(
+            id: "stravaconn-123",
+            userId: "user-123",
+            stravaUserId: "strava-user-12345",
+            accessToken: "fake-access-token",
+            refreshToken: "fake-refresh-token",
+            tokenExpiresAt: Calendar.current.date(byAdding: .day, value: 90, to: Date())!,
+            athleteInfo: [
+                "firstname": "Test",
+                "lastname": "Runner",
+                "profile": "https://example.com/avatar.jpg",
+                "city": "New York",
+                "state": "NY",
+                "country": "United States"
+            ],
+            scopes: ["read", "activity:read", "activity:write"],
+            connected: true,
+            lastSyncDate: Date()
+        )
+        
+        return user
+    }
+    
+    /// Collection of users for preview purposes
     static var previewUsers: [User] {
         [
-            // Experienced runner
-            User(
-                id: "user-1",
-                email: "runner@example.com",
-                name: "Alex Runner",
-                profileImageUrl: "https://randomuser.me/api/portraits/women/44.jpg",
-                gender: "female",
-                dateOfBirth: Calendar.current.date(byAdding: .year, value: -28, to: Date())!,
-                weight: 65.5,
-                height: 170,
-                preferredUnits: "metric",
-                experienceLevel: "intermediate",
-                trainingFrequency: 4,
-                preferredWorkoutTimes: ["morning", "evening"],
-                goals: ["Complete a half marathon", "Improve 5K time"],
-                isOnboarded: true,
-                isActive: true,
-                createdAt: Calendar.current.date(byAdding: .year, value: -1, to: Date())!,
-                updatedAt: Calendar.current.date(byAdding: .day, value: -14, to: Date())!,
-                stravaConnected: true,
-                garminConnected: false
-            ),
+            // Regular user
+            previewUser,
             
-            // New runner
+            // User with Strava connected
+            previewUserWithStrava,
+            
+            // Beginner runner
             User(
-                id: "user-2",
-                email: "new.runner@example.com",
-                name: "New Runner",
-                profileImageUrl: nil,
-                gender: nil,
-                dateOfBirth: nil,
-                weight: nil,
-                height: nil,
-                preferredUnits: "metric",
-                experienceLevel: nil,
-                trainingFrequency: nil,
-                preferredWorkoutTimes: nil,
-                goals: nil,
-                isOnboarded: false,
-                isActive: true,
-                createdAt: Date(),
-                updatedAt: Date(),
-                stravaConnected: false,
-                garminConnected: false
+                id: "user-456",
+                email: "beginner@example.com",
+                name: "Beginner Runner",
+                createdAt: Date().addingTimeInterval(-86400 * 30), // 30 days ago
+                updatedAt: Date().addingTimeInterval(-86400), // 1 day ago
+                settings: UserSettings(
+                    id: "settings-456",
+                    userId: "user-456",
+                    distanceUnit: .mi,
+                    language: "en",
+                    coachingStyle: .conservative,
+                    notificationPreferences: NotificationPreferences(
+                        id: "notif-456",
+                        email: true,
+                        push: false,
+                        sms: false,
+                        inApp: true
+                    ),
+                    privacyDataSharing: true
+                ),
+                runnerProfile: RunnerProfile(
+                    id: "profile-456",
+                    userId: "user-456",
+                    experienceLevel: .beginner,
+                    weeklyRunningFrequency: 3,
+                    weeklyRunningDistanceKm: 15,
+                    typicalPaceMinPerKm: 6 * 60,
+                    recentRaces: [],
+                    primaryGoal: "Complete first 5K",
+                    injuries: [],
+                    maxHR: 190,
+                    restingHR: 70,
+                    dateOfBirth: Calendar.current.date(byAdding: .year, value: -25, to: Date()),
+                    weight: 65.0,
+                    height: 165.0,
+                    sex: .female
+                ),
+                stravaConnection: nil
             ),
             
             // Advanced runner
             User(
-                id: "user-3",
-                email: "elite@example.com",
+                id: "user-789",
+                email: "advanced@example.com",
                 name: "Elite Runner",
-                profileImageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-                gender: "male",
-                dateOfBirth: Calendar.current.date(byAdding: .year, value: -35, to: Date())!,
-                weight: 70.0,
-                height: 180,
-                preferredUnits: "metric",
-                experienceLevel: "advanced",
-                trainingFrequency: 6,
-                preferredWorkoutTimes: ["morning"],
-                goals: ["Qualify for Boston", "Run sub-3 marathon"],
-                isOnboarded: true,
-                isActive: true,
-                createdAt: Calendar.current.date(byAdding: .year, value: -2, to: Date())!,
-                updatedAt: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
-                stravaConnected: true,
-                garminConnected: true
+                createdAt: Date().addingTimeInterval(-86400 * 365), // 1 year ago
+                updatedAt: Date().addingTimeInterval(-86400 * 3), // 3 days ago
+                settings: UserSettings(
+                    id: "settings-789",
+                    userId: "user-789",
+                    distanceUnit: .km,
+                    language: "en",
+                    coachingStyle: .aggressive,
+                    notificationPreferences: NotificationPreferences(
+                        id: "notif-789",
+                        email: true,
+                        push: true,
+                        sms: true,
+                        inApp: true
+                    ),
+                    privacyDataSharing: true
+                ),
+                runnerProfile: RunnerProfile(
+                    id: "profile-789",
+                    userId: "user-789",
+                    experienceLevel: .advanced,
+                    weeklyRunningFrequency: 6,
+                    weeklyRunningDistanceKm: 80,
+                    typicalPaceMinPerKm: 4 * 60,
+                    recentRaces: [
+                        RecentRace(
+                            id: "race-123",
+                            userId: "user-789",
+                            runnerProfileId: "profile-789",
+                            name: "City Marathon",
+                            distance: 42195, // marathon
+                            date: Calendar.current.date(byAdding: .month, value: -3, to: Date())!,
+                            finishTime: 3 * 3600 + 30 * 60 // 3:30:00
+                        ),
+                        RecentRace(
+                            id: "race-456",
+                            userId: "user-789",
+                            runnerProfileId: "profile-789",
+                            name: "Half Marathon Championship",
+                            distance: 21097.5, // half marathon
+                            date: Calendar.current.date(byAdding: .month, value: -6, to: Date())!,
+                            finishTime: 1 * 3600 + 35 * 60 // 1:35:00
+                        )
+                    ],
+                    primaryGoal: "Boston Marathon Qualification",
+                    injuries: [
+                        Injury(
+                            id: "injury-123",
+                            userId: "user-789",
+                            runnerProfileId: "profile-789",
+                            type: "Ankle Sprain",
+                            severity: .moderate,
+                            startDate: Calendar.current.date(byAdding: .month, value: -8, to: Date())!,
+                            endDate: Calendar.current.date(byAdding: .month, value: -7, to: Date())!,
+                            notes: "Right ankle sprain from trail running",
+                            current: false
+                        )
+                    ],
+                    maxHR: 182,
+                    restingHR: 45,
+                    dateOfBirth: Calendar.current.date(byAdding: .year, value: -35, to: Date()),
+                    weight: 62.0,
+                    height: 172.0,
+                    sex: .male
+                ),
+                stravaConnection: nil
             )
         ]
     }
     
-    /// Format user's age
+    /// Create a sample profile picture URL for a user
+    static func sampleProfilePictureUrl(for userId: String) -> URL? {
+        return URL(string: "https://randomuser.me/api/portraits/\(Int(userId.hash % 2) == 0 ? "men" : "women")/\(abs(userId.hash % 70) + 1).jpg")
+    }
+}
+
+/// Helper extension for formatting user age
+extension User {
+    /// Calculate age in years from birthdate
     var formattedAge: String? {
-        guard let dob = dateOfBirth else { return nil }
+        guard let dateOfBirth = runnerProfile?.dateOfBirth else {
+            return nil
+        }
         
         let calendar = Calendar.current
-        let ageComponents = calendar.dateComponents([.year], from: dob, to: Date())
-        guard let age = ageComponents.year else { return nil }
+        let ageComponents = calendar.dateComponents([.year], from: dateOfBirth, to: Date())
         
-        return "\(age)"
+        if let age = ageComponents.year {
+            return "\(age)"
+        }
+        
+        return nil
     }
     
-    /// Format height in cm
+    /// Format height in user-friendly format
     var formattedHeight: String? {
-        guard let height = height else { return nil }
-        
-        if preferredUnits == "imperial" {
-            // Convert to feet and inches
-            let heightInches = height / 2.54
-            let feet = Int(heightInches) / 12
-            let inches = Int(heightInches) % 12
-            return "\(feet)'\(inches)\""
-        } else {
-            return "\(Int(height)) cm"
+        guard let height = runnerProfile?.height else {
+            return nil
         }
-    }
-    
-    /// Format weight in kg
-    var formattedWeight: String? {
-        guard let weight = weight else { return nil }
         
-        if preferredUnits == "imperial" {
-            // Convert to pounds
-            let pounds = weight * 2.20462
-            return String(format: "%.1f lbs", pounds)
-        } else {
-            return String(format: "%.1f kg", weight)
-        }
+        return "\(Int(height)) cm"
     }
 }
 

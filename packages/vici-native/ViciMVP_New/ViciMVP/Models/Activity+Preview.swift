@@ -8,26 +8,29 @@ import CoreLocation
 extension Activity {
     /// Sample activity for preview purposes
     static var sampleActivity: Activity {
-        Activity(
-            id: "preview-activity-1",
-            userId: "preview-user-1",
-            workoutId: "preview-workout-1",
-            type: "run",
-            name: "Morning Run",
-            description: "Easy morning run around the park",
-            startDate: Date().addingTimeInterval(-3600),
-            endDate: Date().addingTimeInterval(-400),
-            duration: 3200,
-            distance: 5230,
-            avgHeartRate: 148,
+        let calendar = Calendar.current
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
+        
+        return Activity(
+            id: "activity-123",
+            userId: "user-123",
+            workoutId: "workout-123",
+            title: "Morning Run",
+            description: "Easy run around the park",
+            activityType: .run,
+            startTime: calendar.date(bySettingHour: 7, minute: 30, second: 0, of: yesterday)!,
+            endTime: calendar.date(bySettingHour: 8, minute: 15, second: 0, of: yesterday)!,
+            duration: 45 * 60, // 45 minutes in seconds
+            distance: 8500, // 8.5 km in meters
+            elevationGain: 120, // 120 meters
+            calories: 550,
+            averageHeartRate: 145,
             maxHeartRate: 165,
-            avgPace: 367.2,
-            calories: 450,
-            elevationGain: 86,
-            source: "manual",
-            polyline: nil,
-            createdAt: Date(),
-            updatedAt: Date()
+            averagePace: 318, // 5:18 min/km in seconds
+            averageCadence: 170,
+            stravaActivityId: "strava-12345678",
+            routeData: nil,
+            segments: []
         )
     }
     
@@ -38,103 +41,85 @@ extension Activity {
         return activity
     }
     
-    /// Sample activities for preview purposes
+    /// Generate a preview set of activities for the past week
     static var previewActivities: [Activity] {
-        let now = Date()
+        let calendar = Calendar.current
+        let today = Date()
+        var activities: [Activity] = []
         
-        return [
-            // Recent easy run
-            Activity(
-                id: "activity-1",
-                userId: "user-1",
-                workoutId: "workout-1",
-                type: "run",
-                name: "Morning Easy Run",
-                description: "Easy recovery run around the park",
-                startDate: now.addingTimeInterval(-86400), // Yesterday
-                endDate: now.addingTimeInterval(-84600),   // 30 minutes later
-                duration: 1800, // 30 minutes
-                distance: 5000, // 5km
-                avgHeartRate: 142,
-                maxHeartRate: 158,
-                avgPace: 360, // 6:00 min/km
-                calories: 350,
-                elevationGain: 45,
-                source: "manual",
-                polyline: nil,
-                createdAt: now.addingTimeInterval(-84600),
-                updatedAt: now.addingTimeInterval(-84600)
-            ),
+        for dayOffset in (-7...(-1)).reversed() {
+            var activity = sampleActivity
             
-            // Interval workout
-            Activity(
-                id: "activity-2",
-                userId: "user-1",
-                workoutId: "workout-2",
-                type: "run",
-                name: "Interval Training",
-                description: "6x400m repeats with 200m recovery",
-                startDate: now.addingTimeInterval(-259200), // 3 days ago
-                endDate: now.addingTimeInterval(-256800),   // 40 minutes later
-                duration: 2400, // 40 minutes
-                distance: 7000, // 7km
-                avgHeartRate: 165,
-                maxHeartRate: 182,
-                avgPace: 330, // 5:30 min/km
-                calories: 520,
-                elevationGain: 30,
-                source: "strava",
-                polyline: nil,
-                createdAt: now.addingTimeInterval(-256800),
-                updatedAt: now.addingTimeInterval(-256800)
-            ),
-            
-            // Long run
-            Activity(
-                id: "activity-3",
-                userId: "user-1",
-                workoutId: "workout-3",
-                type: "run",
-                name: "Weekend Long Run",
-                description: "Long steady run at easy pace",
-                startDate: now.addingTimeInterval(-345600), // 4 days ago
-                endDate: now.addingTimeInterval(-340200),   // 90 minutes later
-                duration: 5400, // 90 minutes
-                distance: 15000, // 15km
-                avgHeartRate: 148,
-                maxHeartRate: 160,
-                avgPace: 360, // 6:00 min/km
-                calories: 950,
-                elevationGain: 120,
-                source: "strava",
-                polyline: nil,
-                createdAt: now.addingTimeInterval(-340200),
-                updatedAt: now.addingTimeInterval(-340200)
-            ),
-            
-            // Cross-training
-            Activity(
-                id: "activity-4",
-                userId: "user-1",
-                workoutId: "workout-4",
-                type: "cycling",
-                name: "Indoor Cycling",
-                description: "Recovery ride on trainer",
-                startDate: now.addingTimeInterval(-172800), // 2 days ago
-                endDate: now.addingTimeInterval(-169800),   // 50 minutes later
-                duration: 3000, // 50 minutes
-                distance: 25000, // 25km
-                avgHeartRate: 135,
-                maxHeartRate: 145,
-                avgPace: nil, // Not applicable for cycling
-                calories: 420,
-                elevationGain: 200,
-                source: "manual",
-                polyline: nil,
-                createdAt: now.addingTimeInterval(-169800),
-                updatedAt: now.addingTimeInterval(-169800)
-            )
-        ]
+            if let date = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+                activity.id = "activity-\(abs(dayOffset) + 100)"
+                
+                // Set appropriate times for the activity
+                activity.startTime = calendar.date(bySettingHour: 7, minute: 30, second: 0, of: date)!
+                activity.endTime = calendar.date(bySettingHour: 8, minute: 15, second: 0, of: date)!
+                
+                // Vary the workout details
+                activity.title = "Day \(abs(dayOffset)) Run"
+                
+                // Vary distance and duration based on day of week
+                switch abs(dayOffset) % 7 {
+                case 1: // Recovery day
+                    activity.activityType = .run
+                    activity.distance = 5000 // 5K
+                    activity.duration = 30 * 60 // 30 minutes
+                    activity.averageHeartRate = 130
+                    activity.maxHeartRate = 145
+                    activity.averagePace = 360 // 6:00 min/km
+                case 2: // Interval day
+                    activity.activityType = .intervalWorkout
+                    activity.distance = 8000 // 8K
+                    activity.duration = 40 * 60 // 40 minutes
+                    activity.averageHeartRate = 160
+                    activity.maxHeartRate = 180
+                    activity.averagePace = 300 // 5:00 min/km
+                case 3: // Cross-training
+                    activity.activityType = .cycling
+                    activity.distance = 20000 // 20K
+                    activity.duration = 50 * 60 // 50 minutes
+                    activity.averageHeartRate = 140
+                    activity.maxHeartRate = 155
+                    activity.averagePace = 0 // Not applicable for cycling
+                case 4: // Tempo day
+                    activity.activityType = .run
+                    activity.distance = 10000 // 10K
+                    activity.duration = 50 * 60 // 50 minutes
+                    activity.averageHeartRate = 155
+                    activity.maxHeartRate = 170
+                    activity.averagePace = 300 // 5:00 min/km
+                case 5: // Easy day
+                    activity.activityType = .run
+                    activity.distance = 6000 // 6K
+                    activity.duration = 35 * 60 // 35 minutes
+                    activity.averageHeartRate = 135
+                    activity.maxHeartRate = 150
+                    activity.averagePace = 350 // 5:50 min/km
+                case 6: // Rest day
+                    activity.activityType = .walk
+                    activity.distance = 3000 // 3K
+                    activity.duration = 30 * 60 // 30 minutes
+                    activity.averageHeartRate = 110
+                    activity.maxHeartRate = 125
+                    activity.averagePace = 600 // 10:00 min/km
+                case 0: // Long run
+                    activity.activityType = .run
+                    activity.distance = 16000 // 16K
+                    activity.duration = 90 * 60 // 90 minutes
+                    activity.averageHeartRate = 145
+                    activity.maxHeartRate = 160
+                    activity.averagePace = 338 // 5:38 min/km
+                default:
+                    break
+                }
+                
+                activities.append(activity)
+            }
+        }
+        
+        return activities
     }
     
     /// Sample Strava activities for preview purposes
@@ -144,6 +129,42 @@ extension Activity {
             activities[i].source = "strava"
         }
         return activities
+    }
+    
+    // Computed property to support ModelValidation
+    var name: String {
+        return title
+    }
+    
+    // Computed properties for better display
+    var formattedDuration: String {
+        let hours = duration / 3600
+        let minutes = (duration % 3600) / 60
+        let seconds = duration % 60
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            return String(format: "%d:%02d", minutes, seconds)
+        }
+    }
+    
+    var formattedDistance: String? {
+        guard distance > 0 else { return nil }
+        
+        if distance >= 1000 {
+            return String(format: "%.2f km", distance / 1000)
+        } else {
+            return String(format: "%.0f m", distance)
+        }
+    }
+    
+    var formattedPace: String? {
+        guard let pace = averagePace, pace > 0 else { return nil }
+        
+        let minutes = pace / 60
+        let seconds = pace % 60
+        return String(format: "%d:%02d /km", minutes, seconds)
     }
 }
 
@@ -182,5 +203,22 @@ extension Activity {
         }
         
         return coordinates
+    }
+    
+    /// Generate coordinates for a simple route
+    static var previewCoordinates: [[Double]] {
+        // Simple loop route with 10 points
+        return [
+            [40.7128, -74.0060], // Start
+            [40.7135, -74.0070],
+            [40.7145, -74.0075],
+            [40.7155, -74.0070],
+            [40.7165, -74.0060],
+            [40.7160, -74.0050],
+            [40.7150, -74.0040],
+            [40.7140, -74.0035],
+            [40.7130, -74.0045],
+            [40.7128, -74.0060]  // End (same as start)
+        ]
     }
 } 
