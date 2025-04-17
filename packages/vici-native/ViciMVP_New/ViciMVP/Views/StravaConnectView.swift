@@ -14,8 +14,7 @@ struct StravaConnectView: View {
         // Use _StateObject to initialize the property wrapper with a new instance
         // Will only be called once when the view is created
         _viewModel = StateObject(wrappedValue: StravaConnectViewModel(
-            stravaService: StravaService.shared,
-            authViewModel: AuthViewModel.shared
+            stravaService: StravaService.shared
         ))
     }
     
@@ -63,6 +62,44 @@ struct StravaConnectView: View {
                 // Action buttons
                 actionButtonsView
                 
+                // DEBUG ONLY - Error simulation in debug builds
+                #if DEBUG
+                Group {
+                    Divider().padding(.vertical)
+                    
+                    Text("Debug Controls")
+                        .font(.headline)
+                        .padding(.bottom, 8)
+                    
+                    HStack(spacing: 12) {
+                        Button("Connection Error") {
+                            viewModel.handleStravaError(StravaError.connectionFailed(reason: "Test error"))
+                        }
+                        .padding(8)
+                        .background(Color.red.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        
+                        Button("Auth Error") {
+                            viewModel.handleStravaError(StravaError.userNotAuthenticated)
+                        }
+                        .padding(8)
+                        .background(Color.orange.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        
+                        Button("Network Error") {
+                            viewModel.handleStravaError(StravaError.offlineError)
+                        }
+                        .padding(8)
+                        .background(Color.blue.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(.horizontal)
+                #endif
+                
                 Spacer()
             }
             .padding()
@@ -74,6 +111,7 @@ struct StravaConnectView: View {
         .navigationTitle("Strava Integration")
         .onAppear {
             setupNotificationObservers()
+            viewModel.setAuthViewModel(authViewModel)
             viewModel.checkStravaConnection()
         }
         .onDisappear {
@@ -103,6 +141,12 @@ struct StravaConnectView: View {
                 }
                 
                 Spacer()
+                
+                // Show loading indicator for status check
+                if viewModel.isCheckingConnection {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                }
             }
             .padding()
             .background(Color(.secondarySystemBackground))
@@ -127,7 +171,20 @@ struct StravaConnectView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
-                .disabled(viewModel.isLoading)
+                .disabled(viewModel.isLoading || viewModel.isDisconnecting)
+                .opacity(viewModel.isDisconnecting ? 0.7 : 1.0)
+                .overlay(
+                    Group {
+                        if viewModel.isDisconnecting {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                Spacer()
+                            }
+                        }
+                    }
+                )
                 
                 // Sync button
                 Button(action: syncStravaData) {
@@ -141,7 +198,20 @@ struct StravaConnectView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
-                .disabled(viewModel.isLoading)
+                .disabled(viewModel.isLoading || viewModel.isSyncing)
+                .opacity(viewModel.isSyncing ? 0.7 : 1.0)
+                .overlay(
+                    Group {
+                        if viewModel.isSyncing {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                Spacer()
+                            }
+                        }
+                    }
+                )
             } else {
                 // Connect button
                 Button(action: connectToStrava) {
@@ -155,7 +225,20 @@ struct StravaConnectView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
-                .disabled(viewModel.isLoading || !authViewModel.isLoggedIn)
+                .disabled(viewModel.isLoading || viewModel.isConnecting || !authViewModel.isLoggedIn)
+                .opacity(viewModel.isConnecting ? 0.7 : 1.0)
+                .overlay(
+                    Group {
+                        if viewModel.isConnecting {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                Spacer()
+                            }
+                        }
+                    }
+                )
             }
             
             if !authViewModel.isLoggedIn {
@@ -248,24 +331,24 @@ struct StravaConnectView: View {
         }
         
         logger.error("Strava callback failed: \(error)")
-        viewModel.handleError(AuthError.unauthorized, message: "Failed to connect: \(error)")
+        viewModel.handleStravaError(StravaError.connectionFailed(reason: error))
     }
     
     private func processStravaCallback(code: String, state: String) {
         guard let userId = authViewModel.currentUser?.id else {
-            viewModel.handleError(AuthError.unauthorized, message: "You need to be logged in to connect Strava")
+            viewModel.handleStravaError(StravaError.userNotAuthenticated)
             return
         }
         
         Task {
-            let stravaService = StravaService()
+            let stravaService = StravaService.shared
             do {
                 try await stravaService.exchangeCodeForToken(userId: userId, code: code, state: state)
                 viewModel.isStravaConnected = true
                 authViewModel.updateStravaConnectionStatus(isConnected: true)
             } catch {
                 if let stravaError = error as? StravaError {
-                    viewModel.handleError(stravaError)
+                    viewModel.handleStravaError(stravaError)
                 } else {
                     viewModel.handleError(error)
                 }
@@ -288,15 +371,12 @@ struct StravaConnectView: View {
     /// Syncs latest activities from Strava
     private func syncStravaData() {
         guard let userId = authViewModel.currentUser?.id else {
-            viewModel.handleError(AuthError.unauthorized, message: "You need to be logged in to sync Strava data")
+            viewModel.handleStravaError(StravaError.userNotAuthenticated)
             return
         }
         
         Task {
-            await viewModel.runTask(operation: "Sync Strava activities") {
-                try await StravaService.shared.syncActivities(userId: userId)
-                return true
-            }
+            await viewModel.syncStravaActivities(userId: userId)
         }
     }
 }

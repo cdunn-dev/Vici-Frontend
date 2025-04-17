@@ -38,7 +38,7 @@ class StravaService: StravaServiceProtocol {
     
     private struct Constants {
         static let baseURL = "https://api.vici.app"
-        static let stravaEndpoint = "/api/v1/strava"
+        static let stravaEndpoint = "/strava"
     }
     
     // MARK: - Initialization
@@ -59,6 +59,13 @@ class StravaService: StravaServiceProtocol {
     
     deinit {
         networkMonitor.cancel()
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Constructs an API endpoint by appending the path to the base Strava endpoint
+    private func constructEndpoint(_ path: String) -> String {
+        return "\(Constants.stravaEndpoint)\(path)"
     }
     
     // MARK: - Implementation
@@ -83,7 +90,7 @@ class StravaService: StravaServiceProtocol {
             }
             
             let status: ConnectionStatus = try await apiClient.get(
-                endpoint: "/strava/connection/\(userId)",
+                endpoint: constructEndpoint("/connection/\(userId)"),
                 parameters: nil,
                 headers: nil
             )
@@ -119,7 +126,7 @@ class StravaService: StravaServiceProtocol {
             }
             
             let response: AuthURLResponse = try await apiClient.get(
-                endpoint: "/strava/auth-url/\(userId)",
+                endpoint: constructEndpoint("/auth-url/\(userId)"),
                 parameters: nil, 
                 headers: nil
             )
@@ -163,7 +170,7 @@ class StravaService: StravaServiceProtocol {
             struct EmptyResponse: Codable {}
             
             let _: EmptyResponse = try await apiClient.post(
-                endpoint: "/strava/exchange-token",
+                endpoint: constructEndpoint("/exchange-token"),
                 body: [
                     "userId": userId,
                     "code": code,
@@ -199,7 +206,7 @@ class StravaService: StravaServiceProtocol {
         
         do {
             let response: APIResponse<[Activity]> = try await apiClient.get(
-                endpoint: "/strava/activities/\(userId)",
+                endpoint: constructEndpoint("/activities/\(userId)"),
                 parameters: ["limit": limit]
             )
             
@@ -236,7 +243,7 @@ class StravaService: StravaServiceProtocol {
             struct EmptyResponse: Codable {}
             
             let _: EmptyResponse = try await apiClient.delete(
-                endpoint: "/strava/connection/\(userId)",
+                endpoint: constructEndpoint("/connection/\(userId)"),
                 headers: nil
             )
             logger.debug("Successfully disconnected Strava account")

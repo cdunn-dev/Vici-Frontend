@@ -57,19 +57,6 @@
                 <key>CFBundleTypeRole</key>
                 <string>Editor</string>
                 <key>CFBundleURLName</key>
-                <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-                <key>CFBundleURLSchemes</key>
-                <array>
-                    <string>vici</string>
-                </array>
-            </dict>
-        </array>
-        <key>CFBundleURLTypes</key>
-        <array>
-            <dict>
-                <key>CFBundleTypeRole</key>
-                <string>Editor</string>
-                <key>CFBundleURLName</key>
                 <string>com.vici.app</string>
                 <key>CFBundleURLSchemes</key>
                 <array>
