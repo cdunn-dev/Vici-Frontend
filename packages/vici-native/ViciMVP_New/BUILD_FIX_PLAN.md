@@ -59,6 +59,10 @@ We will address these issues in a systematic order:
 - [x] Update AuthViewModel to implement all required methods from AuthViewModelProtocol
 - [x] Create missing model files (TrainingPlanRequest)
 - [x] Update core model files to match the preview extensions
+- [x] Create APIError type or update code to use our new error types
+- [x] Fix "invalid redeclaration" of convertToAppError function
+- [x] Fix accessibility of AppError protocol and related enums
+- [ ] Add 'override' keywords where needed in derived classes
 - [ ] Fix generic type issues with APIResponse and Decodable
 - [ ] Ensure ViewModels conform to ObservableObject where required by SwiftUI
 
@@ -75,7 +79,7 @@ We will address these issues in a systematic order:
 | 1: BaseViewModel Implementation | Completed | April 17, 2024 | Created BaseViewModel.swift with comprehensive implementation that supports both default and custom initialization, proper error handling, task management, and publisher handling |
 | 2: Model Preview Extensions | Completed | April 17, 2024 | Created preview extensions for all model types |
 | 3: Redeclaration Issues | In Progress | April 17, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved |
-| 4: Protocol Conformance | In Progress | April 17, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model |
+| 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel |
 | 5: Method Reference Fixes | In Progress | April 17, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations |
 
 This phase represents the final steps in achieving a buildable application with proper architecture. Once completed, we should have a fully functional codebase that follows consistent patterns and best practices. 

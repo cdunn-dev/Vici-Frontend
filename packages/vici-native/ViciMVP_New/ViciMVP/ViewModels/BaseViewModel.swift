@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import os.log
 import SwiftUI
+import ViciMVP
 
 /// Base class for all ViewModels providing standard functionality
 /// for loading state, error handling, and asynchronous operations.
@@ -157,37 +158,4 @@ class BaseViewModel: ObservableObject {
         errorMessage = nil
         appError = nil
     }
-}
-
-/// Helper functions for error conversion
-func convertToAppError(_ error: Error) -> AppError {
-    if let appError = error as? AppError {
-        return appError
-    }
-    
-    // Handle network-related errors
-    if let urlError = error as? URLError {
-        switch urlError.code {
-        case .notConnectedToInternet, .networkConnectionLost:
-            return NetworkError.connectionLost
-        case .timedOut:
-            return NetworkError.requestTimeout
-        case .badServerResponse, .cannotParseResponse:
-            return NetworkError.invalidResponse
-        case .serverCertificateUntrusted:
-            return NetworkError.securityError
-        default:
-            return NetworkError.unknown(urlError.localizedDescription)
-        }
-    }
-    
-    // Handle NSError
-    if let nsError = error as NSError? {
-        if nsError.domain == NSURLErrorDomain {
-            return NetworkError.unknown(nsError.localizedDescription)
-        }
-    }
-    
-    // Default case
-    return NetworkError.unknown(error.localizedDescription)
 } 
