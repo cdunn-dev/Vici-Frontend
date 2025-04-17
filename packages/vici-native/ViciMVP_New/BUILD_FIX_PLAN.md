@@ -60,7 +60,7 @@ We will address these issues in a systematic order:
 - [x] Fix AppDelegate redeclaration
 - [x] Fix Notification.Name extensions for Strava callbacks
 - [ ] Review and fix other potential notification name conflicts
-- [ ] Fix "Invalid redeclaration of 'KeychainService'"
+- [x] Fix "Invalid redeclaration of 'KeychainService'"
 
 #### Step 4: Address Protocol Conformance Issues
 - [x] Fix KeychainService to properly conform to KeychainServiceProtocol
@@ -90,7 +90,7 @@ We will address these issues in a systematic order:
 |------|--------|------|-------|
 | 1: BaseViewModel Implementation | Completed | April 17, 2024 | Created BaseViewModel.swift with comprehensive implementation that supports both default and custom initialization, proper error handling, task management, and publisher handling |
 | 2: Model Preview Extensions | Completed | April 18, 2024 | Created preview extensions for all model types; Added missing methods like previewNewUser; Added computed properties to match ModelValidation expectations; Fixed property references |
-| 3: Redeclaration Issues | In Progress | April 17, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved; Need to fix KeychainService redeclaration |
+| 3: Redeclaration Issues | In Progress | April 18, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved; Removed duplicate KeychainService in AuthService.swift |
 | 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel; Made APIError public and its properties public |
 | 5: Method Reference Fixes | In Progress | April 17, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Need to fix logger accessibility and error handling |
 
