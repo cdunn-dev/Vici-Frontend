@@ -21,7 +21,7 @@ class BaseViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     /// Logger for ViewModel operations
-    private let logger: Logger
+    let logger: Logger
     
     /// Initializes a new BaseViewModel
     init() {

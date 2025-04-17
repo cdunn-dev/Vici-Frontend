@@ -79,7 +79,7 @@ We will address these issues in a systematic order:
 
 #### Step 5: Fix Method References and Implementations
 - [x] Implement proper async/await handling in AuthViewModel
-- [ ] Make logger property accessible in ViewModels
+- [x] Make logger property accessible in ViewModels
 - [ ] Add proper error handling with try/catch
 - [ ] Fix missing method implementations in service protocols
 - [ ] Resolve scope issues with imports
@@ -92,7 +92,7 @@ We will address these issues in a systematic order:
 | 2: Model Preview Extensions | Completed | April 18, 2024 | Created preview extensions for all model types; Added missing methods like previewNewUser; Added computed properties to match ModelValidation expectations; Fixed property references |
 | 3: Redeclaration Issues | In Progress | April 18, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved; Removed duplicate KeychainService in AuthService.swift |
 | 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel; Made APIError public and its properties public |
-| 5: Method Reference Fixes | In Progress | April 17, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Need to fix logger accessibility and error handling |
+| 5: Method Reference Fixes | In Progress | April 18, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Made logger property accessible to subclasses in BaseViewModel |
 
 ### Execution Sequence
 
