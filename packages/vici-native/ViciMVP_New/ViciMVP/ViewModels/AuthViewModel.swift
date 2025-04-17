@@ -15,10 +15,10 @@ class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
     @Published var currentUser: User?
     
     /// Whether authentication operations are in progress
-    @Published var isLoading: Bool = true
+    @Published override var isLoading: Bool = true
     
     /// Current error message, if any
-    @Published var errorMessage: String?
+    @Published override var errorMessage: String?
     
     /// Whether the user has connected their Strava account
     @Published var isStravaConnected: Bool = false
@@ -256,6 +256,25 @@ class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
         mockViewModel.isLoggedIn = false
         mockViewModel.currentUser = nil
         return mockViewModel
+    }
+    
+    /// Handles errors by attempting to convert them to AppError and updating state
+    /// - Parameter error: The error to handle
+    override func handleError(_ error: Error) {
+        if let authError = error as? AuthError {
+            // Custom handling for auth errors
+            self.appError = authError
+            self.errorMessage = authError.errorDescription
+            
+            // Special handling for unauthorized errors
+            if case .unauthorized = authError {
+                self.isLoggedIn = false
+                self.currentUser = nil
+            }
+        } else {
+            // Use base class implementation for other errors
+            super.handleError(error)
+        }
     }
 }
 

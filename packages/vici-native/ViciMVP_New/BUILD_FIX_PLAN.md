@@ -83,12 +83,12 @@ We will address these issues in a systematic order:
 - [ ] Add proper error handling with try/catch
 - [ ] Fix missing method implementations in service protocols
 - [ ] Resolve scope issues with imports
-- [ ] Fix async/await usage in ProfileViewModel
-  - [ ] Correct usage of Task return values and unwrapping
-  - [ ] Add explicit self references in closures
-  - [ ] Ensure proper error handling for async operations
-- [ ] Fix enum case 'notFound' usage
-- [ ] Address incorrect return type mismatches between Task<Bool?, Error> and Bool
+- [x] Fix async/await usage in ProfileViewModel
+  - [x] Correct usage of Task return values and unwrapping
+  - [x] Add explicit self references in closures
+  - [x] Ensure proper error handling for async operations
+- [x] Fix enum case 'notFound' usage
+- [x] Address incorrect return type mismatches between Task<Bool?, Error> and Bool
 
 ### Progress Tracking
 
@@ -98,7 +98,7 @@ We will address these issues in a systematic order:
 | 2: Model Preview Extensions | Completed | April 18, 2024 | Created preview extensions for all model types; Added missing methods like previewNewUser; Added computed properties to match ModelValidation expectations; Fixed property references |
 | 3: Redeclaration Issues | In Progress | April 18, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved; Removed duplicate KeychainService in AuthService.swift |
 | 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel; Made APIError public and its properties public |
-| 5: Method Reference Fixes | In Progress | April 18, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Made logger property accessible to subclasses in BaseViewModel; Next focus: fix remaining async/await issues in ProfileViewModel |
+| 5: Method Reference Fixes | In Progress | April 18, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Made logger property accessible to subclasses in BaseViewModel; Fixed async/await issues in ProfileViewModel with proper error handling, explicit self references in closures, and correct Task return type handling |
 
 ### Execution Sequence
 

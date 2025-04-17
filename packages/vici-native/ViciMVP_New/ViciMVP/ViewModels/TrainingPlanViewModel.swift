@@ -35,7 +35,9 @@ class TrainingPlanViewModel: BaseViewModel {
     @Published var todaysWorkout: Workout?
     @Published var showCreatePlan = false
     @Published var showEditPlan = false
-    @Published var isOffline = false
+    @Published var isOffline: Bool = false
+    @Published override var isLoading: Bool = false
+    @Published override var errorMessage: String?
     
     // MARK: - Private Properties
     private let trainingService: TrainingService
@@ -223,6 +225,16 @@ class TrainingPlanViewModel: BaseViewModel {
             isOffline = true
             logger.notice("Device appears to be offline. Setting offline mode.")
         }
+    }
+    
+    /// Handles errors by attempting to convert them to AppError and updating state
+    /// - Parameter error: The error to handle
+    override func handleError(_ error: Error) {
+        // Check if the error indicates we're offline
+        checkIfOffline(error: error)
+        
+        // Then use the standard error handling
+        super.handleError(error)
     }
 }
 
