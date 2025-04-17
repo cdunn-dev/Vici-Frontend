@@ -143,10 +143,17 @@ class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
     }
     
     /// Refresh the current user's profile
-    func refreshUserProfile() async {
+    func refreshUserProfile() {
+        Task {
+            await refreshUserProfileAsync()
+        }
+    }
+    
+    /// Async implementation of refreshUserProfile
+    private func refreshUserProfileAsync() async {
         guard isLoggedIn else {
             logger.debug("Cannot refresh profile: user not logged in")
-            handleError(AuthError.sessionExpired)
+            handleError(AuthError.unauthorized)
             return
         }
         
@@ -161,7 +168,7 @@ class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
     // MARK: - Strava Connection Methods
     
     /// Check if the user has connected their Strava account
-    private func checkStravaConnection() {
+    func checkStravaConnection() {
         guard let userId = currentUser?.id else {
             logger.debug("Cannot check Strava connection: no current user")
             return
@@ -177,9 +184,33 @@ class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
         }
     }
     
+    /// Connect to Strava - Implementation of AuthViewModelProtocol
+    func connectToStrava() {
+        Task {
+            guard let userId = currentUser?.id else {
+                logger.debug("Cannot connect to Strava: no current user")
+                handleError(AuthError.unauthorized)
+                return
+            }
+            await connectStrava(userId: userId)
+        }
+    }
+    
+    /// Disconnect from Strava - Implementation of AuthViewModelProtocol
+    func disconnectStrava() {
+        Task {
+            guard let userId = currentUser?.id else {
+                logger.debug("Cannot disconnect from Strava: no current user")
+                handleError(AuthError.unauthorized)
+                return
+            }
+            await disconnectStrava(userId: userId)
+        }
+    }
+    
     /// Connect the user's Strava account
     /// - Parameter userId: The user's ID
-    func connectStrava(userId: String) async {
+    private func connectStrava(userId: String) async {
         let _ = await runTask(operation: "Connect Strava for user: \(userId)") {
             try await authService.connectStrava(userId: userId)
             self.isStravaConnected = true
@@ -189,7 +220,7 @@ class AuthViewModel: BaseViewModel, AuthViewModelProtocol {
     
     /// Disconnect the user's Strava account
     /// - Parameter userId: The user's ID
-    func disconnectStrava(userId: String) async {
+    private func disconnectStrava(userId: String) async {
         let _ = await runTask(operation: "Disconnect Strava for user: \(userId)") {
             try await authService.disconnectStrava(userId: userId)
             self.isStravaConnected = false

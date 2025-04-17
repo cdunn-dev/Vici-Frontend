@@ -23,6 +23,12 @@ protocol KeychainServiceProtocol {
     /// Check if access token is expired or about to expire
     func isAccessTokenExpired(withBuffer minutes: Int) -> Bool
     
+    /// Save user ID
+    func saveUserId(_ userId: String)
+    
+    /// Retrieve user ID
+    func getUserId() -> String?
+    
     /// Clear all tokens from keychain
     func clearTokens()
 } 
