@@ -6,152 +6,150 @@ import Foundation
 
 /// Preview extensions for the Workout model to help with the transition from mock data
 extension Workout {
-    /// A sample workout for previews
+    /// Sample workout for preview purposes
     static var sampleWorkout: Workout {
-        Workout(
-            id: "sample-1",
-            planId: "plan-1",
-            userId: "user-1",
-            name: "Easy Recovery Run",
-            description: "Start the week with a gentle recovery run to flush out any fatigue from the weekend.",
-            scheduledDate: Date(),
-            completed: false,
-            completedDate: nil,
-            duration: 30,
-            distance: 5000,
-            activities: [],
-            createdAt: Date(),
-            updatedAt: Date()
+        return Workout(
+            id: "workout-123",
+            trainingPlanId: "plan-123",
+            userId: "user-123",
+            title: "Easy 5K Run",
+            description: "An easy recovery run to build aerobic base",
+            date: Date(),
+            status: .upcoming,
+            workoutType: .run,
+            scheduledDuration: 30 * 60, // 30 minutes in seconds
+            scheduledDistance: 5000, // 5K in meters
+            tags: ["recovery", "easy"],
+            notes: "Keep heart rate in Zone 2",
+            goal: "Build aerobic base and recover from yesterday's workout",
+            segments: [
+                WorkoutSegment(
+                    id: "segment-1",
+                    workoutId: "workout-123",
+                    order: 1,
+                    title: "Warm-up",
+                    description: "Easy jog to warm up",
+                    duration: 5 * 60, // 5 minutes
+                    distance: 800, // 800 meters
+                    intensity: .easy,
+                    targetPace: 360, // 6:00 min/km
+                    targetHeartRate: 130,
+                    targetPower: nil,
+                    targetCadence: 165,
+                    completed: false
+                ),
+                WorkoutSegment(
+                    id: "segment-2",
+                    workoutId: "workout-123",
+                    order: 2,
+                    title: "Main",
+                    description: "Steady easy run",
+                    duration: 20 * 60, // 20 minutes
+                    distance: 3400, // 3.4 km
+                    intensity: .easy,
+                    targetPace: 350, // 5:50 min/km
+                    targetHeartRate: 140,
+                    targetPower: nil,
+                    targetCadence: 170,
+                    completed: false
+                ),
+                WorkoutSegment(
+                    id: "segment-3",
+                    workoutId: "workout-123",
+                    order: 3,
+                    title: "Cool-down",
+                    description: "Easy jog to cool down",
+                    duration: 5 * 60, // 5 minutes
+                    distance: 800, // 800 meters
+                    intensity: .easy,
+                    targetPace: 360, // 6:00 min/km
+                    targetHeartRate: 125,
+                    targetPower: nil,
+                    targetCadence: 165,
+                    completed: false
+                )
+            ]
         )
     }
     
-    /// A collection of workouts for a preview week
+    /// Sample workout for the current week (preview)
+    static var previewTodaysWorkout: Workout {
+        var workout = sampleWorkout
+        workout.title = "Today's Interval Session"
+        workout.description = "High-intensity intervals to improve VO2 max"
+        workout.date = Date()
+        workout.status = .upcoming
+        workout.workoutType = .interval
+        workout.scheduledDuration = 45 * 60 // 45 minutes
+        workout.scheduledDistance = 8000 // 8K
+        return workout
+    }
+    
+    /// Generate a preview week of workouts
     static var previewWeek: [Workout] {
         let calendar = Calendar.current
         let today = Date()
+        var weekWorkouts: [Workout] = []
         
-        // Create date components for this week
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
-        let weekDates = (0...6).map { day in
-            calendar.date(byAdding: .day, value: day, to: monday)!
+        // Generate 5 workouts for the week
+        for dayOffset in -2...2 {
+            var workout = sampleWorkout
+            
+            if let date = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+                workout.id = "workout-\(dayOffset+100)"
+                workout.date = date
+                
+                // Past workouts are completed
+                if dayOffset < 0 {
+                    workout.status = .completed
+                    workout.title = "Completed \(abs(dayOffset)) days ago"
+                } else if dayOffset == 0 {
+                    workout.status = .upcoming
+                    workout.title = "Today's Workout"
+                } else {
+                    workout.status = .upcoming
+                    workout.title = "Upcoming in \(dayOffset) days"
+                }
+                
+                // Add some variety to workout types
+                switch dayOffset {
+                case -2: workout.workoutType = .recovery
+                case -1: workout.workoutType = .longRun
+                case 0: workout.workoutType = .interval
+                case 1: workout.workoutType = .tempo
+                case 2: workout.workoutType = .easy
+                default: workout.workoutType = .run
+                }
+                
+                weekWorkouts.append(workout)
+            }
         }
         
-        return [
-            // Monday - Easy Run
-            Workout(
-                id: "w1",
-                planId: "plan-1",
-                userId: "user-1",
-                name: "Easy Recovery Run",
-                description: "Start the week with a gentle recovery run to flush out any fatigue from the weekend.",
-                scheduledDate: weekDates[0],
-                completed: weekDates[0] < today,
-                completedDate: weekDates[0] < today ? weekDates[0] : nil,
-                duration: 30,
-                distance: 5000,
-                activities: [],
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date()
-            ),
-            
-            // Wednesday - Intervals
-            Workout(
-                id: "w2",
-                planId: "plan-1",
-                userId: "user-1",
-                name: "Interval Workout",
-                description: "6 x 400m repeats with 200m recovery jogs. Target pace 10-15 sec/km faster than 5K pace.",
-                scheduledDate: weekDates[2],
-                completed: weekDates[2] < today,
-                completedDate: weekDates[2] < today ? weekDates[2] : nil,
-                duration: 40,
-                distance: 7000,
-                activities: [],
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date()
-            ),
-            
-            // Friday - Tempo Run
-            Workout(
-                id: "w3",
-                planId: "plan-1",
-                userId: "user-1",
-                name: "Tempo Run",
-                description: "Warm up 10min, 20min at marathon pace, 10min cooldown.",
-                scheduledDate: weekDates[4],
-                completed: weekDates[4] < today,
-                completedDate: weekDates[4] < today ? weekDates[4] : nil,
-                duration: 45,
-                distance: 8000,
-                activities: [],
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date()
-            ),
-            
-            // Saturday - Easy Run
-            Workout(
-                id: "w4",
-                planId: "plan-1",
-                userId: "user-1",
-                name: "Easy Run",
-                description: "Easy effort run with focus on good form. Keep the effort conversational.",
-                scheduledDate: weekDates[5],
-                completed: weekDates[5] < today,
-                completedDate: weekDates[5] < today ? weekDates[5] : nil,
-                duration: 35,
-                distance: 6000,
-                activities: [],
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date()
-            ),
-            
-            // Sunday - Long Run
-            Workout(
-                id: "w5",
-                planId: "plan-1",
-                userId: "user-1",
-                name: "Long Run",
-                description: "Weekly long run to build endurance. Keep the pace easy and focus on time on feet.",
-                scheduledDate: weekDates[6],
-                completed: weekDates[6] < today,
-                completedDate: weekDates[6] < today ? weekDates[6] : nil,
-                duration: 90,
-                distance: 16000,
-                activities: [],
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date()
-            )
-        ]
+        return weekWorkouts
     }
     
-    /// Today's workout for preview
-    static var previewTodaysWorkout: Workout? {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        return previewWeek.first(where: { workout in
-            calendar.isDate(calendar.startOfDay(for: workout.scheduledDate), 
-                           inSameDayAs: calendar.startOfDay(for: today))
-        })
+    // Computed properties to match ModelValidation expectations
+    var name: String {
+        return title
     }
     
     /// Format duration in minutes to a display string
     func formattedDuration() -> String {
-        guard let duration = duration else { return "N/A" }
+        guard let duration = scheduledDuration else { return "N/A" }
         
-        let hours = duration / 60
-        let minutes = duration % 60
+        let hours = duration / 3600
+        let minutes = (duration % 3600) / 60
         
         if hours > 0 {
             return String(format: "%dh %dm", hours, minutes)
         } else {
-            return String(format: "%d min", minutes)
+            return String(format: "%d min", minutes / 60)
         }
     }
     
     /// Format distance in meters to a display string
     func formattedDistance() -> String? {
-        guard let distance = distance else { return nil }
+        guard let distance = scheduledDistance else { return nil }
         
         if distance >= 1000 {
             return String(format: "%.2f km", distance / 1000)
@@ -170,7 +168,7 @@ extension Workout {
             // Today's workout (easy run)
             Workout(
                 id: "workout-1",
-                planId: "plan-1",
+                trainingPlanId: "plan-1",
                 scheduledDate: today,
                 workoutType: "Easy Run",
                 name: "Recovery Run",
@@ -185,7 +183,7 @@ extension Workout {
             // Tomorrow's workout (tempo)
             Workout(
                 id: "workout-2",
-                planId: "plan-1",
+                trainingPlanId: "plan-1",
                 scheduledDate: calendar.date(byAdding: .day, value: 1, to: today)!,
                 workoutType: "Tempo Run",
                 name: "Tempo Intervals",
@@ -200,7 +198,7 @@ extension Workout {
             // Yesterday's workout (completed)
             Workout(
                 id: "workout-3",
-                planId: "plan-1",
+                trainingPlanId: "plan-1",
                 scheduledDate: calendar.date(byAdding: .day, value: -1, to: today)!,
                 workoutType: "Long Run",
                 name: "Weekend Long Run",
@@ -215,7 +213,7 @@ extension Workout {
             // Two days ago (completed)
             Workout(
                 id: "workout-4",
-                planId: "plan-1",
+                trainingPlanId: "plan-1",
                 scheduledDate: calendar.date(byAdding: .day, value: -2, to: today)!,
                 workoutType: "Rest Day",
                 name: "Rest",
@@ -235,7 +233,7 @@ extension Workout {
         
         return Workout(
             id: "workout-preview",
-            planId: "plan-1",
+            trainingPlanId: "plan-1",
             scheduledDate: today,
             workoutType: "Interval",
             name: "Speed Intervals",

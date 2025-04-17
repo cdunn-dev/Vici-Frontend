@@ -19,6 +19,7 @@ After our successful reorganization and cleanup efforts, we now have a cleaner c
    - "Invalid redeclaration of 'AppDelegate'"
    - "Invalid redeclaration of 'stravaCallbackReceived'"
    - "Invalid redeclaration of 'stravaCallbackFailed'"
+   - "Invalid redeclaration of 'KeychainService'"
 
 4. **Protocol Conformance Issues**:
    - "Type 'AuthViewModel' does not conform to protocol 'AuthViewModelProtocol'"
@@ -30,6 +31,11 @@ After our successful reorganization and cleanup efforts, we now have a cleaner c
    - "'async' call in a function that does not support concurrency"
    - "Call can throw, but it is not marked with 'try' and the error is not handled"
    - "Value of type 'any AuthServiceProtocol' has no member 'getCurrentUser'"
+   - "'logger' is inaccessible due to 'private' protection level"
+
+6. **Type Accessibility Issues**:
+   - "Cannot find type 'APIError' in scope" in multiple services
+   - Properties in error types need to be made public (errorCode, errorDescription, etc.)
 
 ### Implementation Plan
 
@@ -47,11 +53,14 @@ We will address these issues in a systematic order:
 - [x] Create/fix TrainingPlan+Preview.swift with sample data
 - [x] Create/fix Activity+Preview.swift with sample data
 - [x] Create/fix User+Preview.swift with sample data
+- [ ] Ensure preview extensions are properly imported where needed
+- [ ] Verify all preview properties match those referenced in views
 
 #### Step 3: Resolve Remaining Redeclaration Issues
 - [x] Fix AppDelegate redeclaration
 - [x] Fix Notification.Name extensions for Strava callbacks
 - [ ] Review and fix other potential notification name conflicts
+- [ ] Fix "Invalid redeclaration of 'KeychainService'"
 
 #### Step 4: Address Protocol Conformance Issues
 - [x] Fix KeychainService to properly conform to KeychainServiceProtocol
@@ -62,12 +71,15 @@ We will address these issues in a systematic order:
 - [x] Create APIError type or update code to use our new error types
 - [x] Fix "invalid redeclaration" of convertToAppError function
 - [x] Fix accessibility of AppError protocol and related enums
+- [x] Make APIError public and properly accessible across modules
+- [x] Make properties in error types public (errorCode, errorDescription, recoverySuggestion)
 - [ ] Add 'override' keywords where needed in derived classes
 - [ ] Fix generic type issues with APIResponse and Decodable
 - [ ] Ensure ViewModels conform to ObservableObject where required by SwiftUI
 
 #### Step 5: Fix Method References and Implementations
 - [x] Implement proper async/await handling in AuthViewModel
+- [ ] Make logger property accessible in ViewModels
 - [ ] Add proper error handling with try/catch
 - [ ] Fix missing method implementations in service protocols
 - [ ] Resolve scope issues with imports
@@ -77,9 +89,29 @@ We will address these issues in a systematic order:
 | Step | Status | Date | Notes |
 |------|--------|------|-------|
 | 1: BaseViewModel Implementation | Completed | April 17, 2024 | Created BaseViewModel.swift with comprehensive implementation that supports both default and custom initialization, proper error handling, task management, and publisher handling |
-| 2: Model Preview Extensions | Completed | April 17, 2024 | Created preview extensions for all model types |
-| 3: Redeclaration Issues | In Progress | April 17, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved |
-| 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel |
-| 5: Method Reference Fixes | In Progress | April 17, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations |
+| 2: Model Preview Extensions | In Progress | April 17, 2024 | Created preview extensions for all model types; Need to ensure proper imports and references |
+| 3: Redeclaration Issues | In Progress | April 17, 2024 | Fixed AppDelegate redeclaration and confirmed Notification.Name extensions are properly moved; Need to fix KeychainService redeclaration |
+| 4: Protocol Conformance | In Progress | April 18, 2024 | Updated KeychainServiceProtocol with userId methods; Updated AuthViewModel to implement all required protocol methods; Created TrainingPlanRequest model; Made AppError protocol and related enums public; Fixed import of ViciMVP in BaseViewModel; Made APIError public and its properties public |
+| 5: Method Reference Fixes | In Progress | April 17, 2024 | Implemented proper async/await pattern in AuthViewModel; Modified for Task-based operations; Need to fix logger accessibility and error handling |
+
+### Execution Sequence
+
+To maximize our progress, we'll execute the remaining tasks in this order:
+
+1. **Fix Type Accessibility Issues**
+   - Make APIError public and accessible
+   - Make properties in error types public
+
+2. **Fix Model Preview Extensions**
+   - Ensure proper imports and access
+
+3. **Fix Protocol Conformance Issues**
+   - Fix KeychainService redeclaration
+   - Add override keywords
+   - Fix protocol conformance
+
+4. **Fix Method References**
+   - Make logger accessible
+   - Fix async/try error handling
 
 This phase represents the final steps in achieving a buildable application with proper architecture. Once completed, we should have a fully functional codebase that follows consistent patterns and best practices. 
