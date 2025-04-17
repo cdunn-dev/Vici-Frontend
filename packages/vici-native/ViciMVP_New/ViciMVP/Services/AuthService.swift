@@ -117,7 +117,7 @@ class AuthService: ObservableObject, AuthServiceProtocol {
         ]
         
         do {
-            let response: APIResponse<[String: Any]> = try await apiClient.post(
+            let response: APIResponse<DictionaryResponse> = try await apiClient.post(
                 endpoint: "auth/login",
                 body: parameters
             )

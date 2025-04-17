@@ -9,6 +9,82 @@ struct APIResponse<T: Decodable>: Decodable {
     let errors: [String]?
 }
 
+/// Dictionary response type for any JSON response
+struct DictionaryResponse: Decodable {
+    let dictionary: [String: AnyCodable]
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        dictionary = try container.decode([String: AnyCodable].self)
+    }
+    
+    subscript(key: String) -> Any? {
+        return dictionary[key]?.value
+    }
+    
+    var allKeys: [String] {
+        return Array(dictionary.keys)
+    }
+}
+
+/// A type that can hold any Codable value
+struct AnyCodable: Codable {
+    let value: Any
+    
+    init(_ value: Any) {
+        self.value = value
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if container.decodeNil() {
+            self.value = NSNull()
+        } else if let bool = try? container.decode(Bool.self) {
+            self.value = bool
+        } else if let int = try? container.decode(Int.self) {
+            self.value = int
+        } else if let double = try? container.decode(Double.self) {
+            self.value = double
+        } else if let string = try? container.decode(String.self) {
+            self.value = string
+        } else if let array = try? container.decode([AnyCodable].self) {
+            self.value = array.map { $0.value }
+        } else if let dictionary = try? container.decode([String: AnyCodable].self) {
+            self.value = dictionary.mapValues { $0.value }
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "AnyCodable cannot decode value")
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        switch value {
+        case is NSNull:
+            try container.encodeNil()
+        case let bool as Bool:
+            try container.encode(bool)
+        case let int as Int:
+            try container.encode(int)
+        case let double as Double:
+            try container.encode(double)
+        case let string as String:
+            try container.encode(string)
+        case let array as [Any]:
+            try container.encode(array.map { AnyCodable($0) })
+        case let dictionary as [String: Any]:
+            try container.encode(dictionary.mapValues { AnyCodable($0) })
+        default:
+            let context = EncodingError.Context(
+                codingPath: container.codingPath,
+                debugDescription: "AnyCodable cannot encode value \(value)"
+            )
+            throw EncodingError.invalidValue(value, context)
+        }
+    }
+}
+
 /// APIClient for making HTTP requests to the Vici backend API
 class APIClient: APIClientProtocol {
     // MARK: - Properties
@@ -181,13 +257,10 @@ class APIClient: APIClientProtocol {
                         let stringResponse = String(data: data, encoding: .utf8) ?? ""
                         logger.debug("Returning string response: \(stringResponse.prefix(100))...")
                         return stringResponse as! T
-                    } else if T.self == [String: Any].self {
-                        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                            logger.error("Failed to parse JSON response")
-                            throw APIError.decodingError(APIError.invalidResponseData.localizedDescription)
-                        }
-                        logger.debug("Returning dictionary response with keys: \(json.keys)")
-                        return json as! T
+                    } else if T.self == DictionaryResponse.self {
+                        let dictResponse = try decoder.decode(DictionaryResponse.self, from: data)
+                        logger.debug("Returning dictionary response with keys: \(dictResponse.allKeys)")
+                        return dictResponse as! T
                     } else {
                         let decodedResponse = try decoder.decode(T.self, from: data)
                         logger.debug("Successfully decoded response of type \(T.self)")
@@ -431,9 +504,31 @@ class APIClient: APIClientProtocol {
         )
     }
     
+    /// GET request that returns a dictionary
+    func getDictionary(endpoint: String, parameters: [String: Any]? = nil, headers: [String: String]? = nil) async throws -> DictionaryResponse {
+        logger.debug("GET Dictionary \(endpoint)")
+        return try await request(
+            endpoint: endpoint,
+            method: .get,
+            parameters: parameters,
+            headers: headers
+        )
+    }
+    
     /// POST request with typed response
     func post<T: Decodable>(endpoint: String, body: Any? = nil, headers: [String: String]? = nil) async throws -> T {
         logger.debug("POST \(endpoint)")
+        return try await request(
+            endpoint: endpoint,
+            method: .post,
+            body: body,
+            headers: headers
+        )
+    }
+    
+    /// POST request that returns a dictionary
+    func postDictionary(endpoint: String, body: Any? = nil, headers: [String: String]? = nil) async throws -> DictionaryResponse {
+        logger.debug("POST Dictionary \(endpoint)")
         return try await request(
             endpoint: endpoint,
             method: .post,
